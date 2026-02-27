@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
   }
 
   if (!process.env.XAI_API_KEY) {
-    return res.status(500).json({ error: 'API-ключ не найден в настройках Vercel' });
+    return res.status(500).json({ error: 'API-ключ не найден. Добавь XAI_API_KEY в Vercel Settings → Environment Variables' });
   }
 
   const targetUrl = 'https://api.x.ai' + req.url.replace('/api/proxy', '');
@@ -21,7 +21,6 @@ module.exports = async (req, res) => {
     }
   };
 
-  // Правильная обработка тела запроса для Vercel
   if (req.body && Object.keys(req.body).length > 0) {
     fetchOptions.body = JSON.stringify(req.body);
   }
