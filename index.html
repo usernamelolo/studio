@@ -11,7 +11,7 @@
     .tab-active { background: #4f46e5; color: white; font-weight: 700; }
     .card { background: white; border: 2px solid #e0e7ff; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05); }
     video, img { border-radius: 16px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
-    #debug, #video-debug { background: #f1f5f9; border: 2px solid #64748b; font-family: monospace; white-space: pre-wrap; font-size: 13px; max-height: 400px; overflow:auto; }
+    #debug, #video-debug { background: #f1f5f9; border: 2px solid #64748b; font-family: monospace; white-space: pre-wrap; font-size: 13px; max-height: 500px; overflow:auto; }
   </style>
 </head>
 <body class="text-gray-900 min-h-screen pb-20">
@@ -114,7 +114,7 @@
       });
     }
 
-    // ВИДЕО
+    // ====================== ВИДЕО ======================
     async function generateVideo(isImageToVideo) {
       const statusEl = document.getElementById('video-status');
       const resultDiv = document.getElementById('video-result');
@@ -141,7 +141,7 @@
 
         const res = await apiFetch('/v1/videos/generations', { method: 'POST', body: JSON.stringify(body) });
         const data = await res.json();
-        debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
+        debug.innerHTML += `Статус генерации: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
 
         if (!res.ok) throw new Error(data.error?.message || 'Ошибка');
 
@@ -151,19 +151,22 @@
           attempts++;
           const statusRes = await apiFetch(`/v1/videos/${requestId}`);
           const statusData = await statusRes.json();
-          debug.innerHTML += `Polling #${attempts}: ${statusData.status}\n`;
 
-          if (statusData.status === 'done') {
+          debug.innerHTML += `Polling #${attempts}: ${JSON.stringify(statusData)}\n`;
+
+          // Гибкая проверка статуса
+          const status = statusData.status || statusData.state || statusData.phase || statusData.status_code;
+          if (status === 'done' || status === 'completed' || statusData.video || statusData.url) {
             clearInterval(poll);
-            currentVideoUrl = statusData.video.url;
+            currentVideoUrl = statusData.video?.url || statusData.url || statusData.output?.url;
             document.getElementById('video-player').src = currentVideoUrl;
-            statusEl.textContent = 'Готово!';
-            debug.innerHTML += '✅ Видео готово!';
-          } else if (statusData.status === 'failed' || attempts > 40) {
+            statusEl.textContent = 'Готово! Смотрите и скачивайте видео';
+            debug.innerHTML += '✅ ВИДЕО ГОТОВО!';
+          } else if (status === 'failed' || attempts > 60) {
             clearInterval(poll);
-            statusEl.textContent = 'Ошибка генерации';
+            statusEl.textContent = 'Ошибка генерации видео';
           }
-        }, 4000);
+        }, 3000);
       } catch (e) {
         statusEl.textContent = 'Ошибка: ' + e.message;
         debug.innerHTML += '❌ ' + e.message;
@@ -178,7 +181,7 @@
       a.click();
     }
 
-    // ИЗОБРАЖЕНИЯ
+    // ====================== ИЗОБРАЖЕНИЯ ======================
     function displayImages(images) {
       const gallery = document.getElementById('image-gallery');
       gallery.innerHTML = '';
@@ -187,7 +190,7 @@
         const div = document.createElement('div');
         div.className = 'relative group';
         div.innerHTML = `
-          <img src="\( {url}" class="w-full cursor-pointer" onclick="window.open(' \){url}', '_blank')" onerror="this.src='https://via.placeholder.com/400x500/64748b/ffffff?text=Нет+изображения'">
+          <img src="\( {url}" crossorigin="anonymous" class="w-full cursor-pointer" onclick="window.open(' \){url}', '_blank')" onerror="this.src='https://via.placeholder.com/400x500/64748b/ffffff?text=Нет+изображения'">
           <button onclick="downloadImage('${url}')" class="absolute bottom-4 right-4 bg-white/90 px-6 py-2 rounded-2xl text-sm hover:bg-indigo-600 hover:text-white transition">Скачать</button>
         `;
         gallery.appendChild(div);
@@ -226,7 +229,7 @@
 
         if (data.data && data.data.length > 0) {
           displayImages(data.data);
-          debug.innerHTML += '✅ Изображения получены!';
+          debug.innerHTML += '✅ Изображения получены и показаны!';
         } else {
           debug.innerHTML += '❌ Нет изображений в ответе';
         }
