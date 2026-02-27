@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GROK ADULT STUDIO 2.0 • Профессиональный генератор контента для взрослых</title>
+  <title>GROK ADULT STUDIO 2.0 • Профессиональный генератор </title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background: #f8fafc; font-family: system-ui; }
@@ -11,14 +11,15 @@
     .tab-active { background: #4f46e5; color: white; font-weight: 700; }
     .card { background: white; border: 2px solid #e0e7ff; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05); }
     video, img { border-radius: 16px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+    #debug, #video-debug { background: #f1f5f9; border: 2px solid #64748b; font-family: monospace; white-space: pre-wrap; font-size: 13px; max-height: 500px; overflow:auto; }
   </style>
 </head>
 <body class="text-gray-900 min-h-screen pb-20">
   <div class="max-w-7xl mx-auto p-6">
     <header class="header text-white text-center py-16 rounded-3xl mb-12">
       <h1 class="text-6xl font-bold tracking-tight">GROK ADULT STUDIO</h1>
-      <p class="text-3xl mt-4">Профессиональный генератор изображений и видео для взрослых • 2026</p>
-      <p class="mt-3 text-indigo-100 text-xl">Высококачественный контент • Реалистичные модели • Полная творческая свобода</p>
+      <p class="text-3xl mt-4">Профессиональный генератор • 2026</p>
+      <p class="mt-3 text-indigo-100 text-xl">Высококачественный  свобода</p>
     </header>
 
     <div class="flex justify-center mb-10 border-b-4 border-indigo-200">
@@ -26,8 +27,9 @@
       <button onclick="switchTab(1)" id="tab1" class="px-14 py-5 text-2xl rounded-t-3xl">🖼️ Изображения и редактор</button>
     </div>
 
-    <!-- ВИДЕО СЕКЦИЯ (НЕ ТРОГАЕМ — ОСТАВЛЕНА КАК БЫЛА) -->
+    <!-- ВИДЕО (не трогаем) -->
     <div id="section-video" class="card p-10 rounded-3xl">
+      <!-- Полная секция видео из предыдущей версии — оставлена без изменений -->
       <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🎥 Генератор видео</h2>
       <div class="grid md:grid-cols-2 gap-10">
         <div>
@@ -52,9 +54,10 @@
         <video id="video-player" controls class="w-full max-w-4xl mx-auto"></video>
         <button onclick="downloadVideo()" class="mt-8 bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-4 rounded-2xl text-lg">Скачать видео</button>
       </div>
+      <div id="video-debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
     </div>
 
-    <!-- ИЗОБРАЖЕНИЯ + РЕДАКТИРОВАНИЕ С 4 ВАРИАНТАМИ И ПРЕДПРОСМОТРОМ -->
+    <!-- ИЗОБРАЖЕНИЯ + 2 ВАРИАНТА ПРИ РЕДАКТИРОВАНИИ -->
     <div id="section-image" class="card p-10 rounded-3xl hidden">
       <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🖼️ Генератор и редактор изображений</h2>
       <div class="grid lg:grid-cols-2 gap-10">
@@ -75,23 +78,26 @@
             <input type="file" id="extra2" accept="image/*" class="block w-full text-sm">
           </div>
           <textarea id="edit-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Изменить позу, освещение, стиль..."></textarea>
-          <button onclick="editImage()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Применить изменения (4 варианта)</button>
+          <button onclick="editImage()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Применить изменения</button>
         </div>
       </div>
 
-      <!-- БЛОК С 2 КОЛОНКАМИ ДЛЯ РЕДАКТИРОВАНИЯ -->
+      <!-- 2 ВАРИАНТА ВЫВОДА ПРИ РЕДАКТИРОВАНИИ -->
       <div id="edit-result" class="mt-12 hidden grid md:grid-cols-2 gap-8">
         <div>
           <p class="text-sm font-medium text-gray-600 mb-2 text-center">Оригинальное фото</p>
           <img id="original-preview" class="w-full rounded-3xl" alt="Оригинал">
         </div>
         <div>
-          <p class="text-sm font-medium text-gray-600 mb-2 text-center">4 варианта редактирования</p>
+          <p class="text-sm font-medium text-gray-600 mb-2 text-center">Результат редактирования</p>
           <div id="edited-gallery" class="grid grid-cols-2 gap-4"></div>
         </div>
       </div>
 
+      <!-- Галерея для генерации с нуля -->
       <div id="image-gallery" class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+
+      <div id="debug" class="mt-12 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
     </div>
   </div>
 
@@ -122,6 +128,7 @@
       });
     }
 
+    // ====================== ИЗОБРАЖЕНИЯ ======================
     function displayImages(images, isEdit = false) {
       const gallery = isEdit ? document.getElementById('edited-gallery') : document.getElementById('image-gallery');
       if (!isEdit) gallery.innerHTML = '';
@@ -149,26 +156,47 @@
     async function generateImages() {
       const prompt = document.getElementById('image-prompt').value.trim();
       if (!prompt) return alert('Введите описание');
+      const debug = document.getElementById('debug');
+      debug.innerHTML = 'Отправка запроса...\n';
+
       try {
         const res = await apiFetch('/v1/images/generations', {
           method: 'POST',
-          body: JSON.stringify({ model: "grok-imagine-image", prompt, n: 4, response_format: "url", seed: Math.floor(Math.random() * 2147483647) })
+          body: JSON.stringify({
+            model: "grok-imagine-image",
+            prompt: prompt,
+            n: 4,
+            response_format: "url",
+            seed: Math.floor(Math.random() * 2147483647)
+          })
         });
+
+        debug.innerHTML += `Статус: ${res.status}\n\n`;
         const data = await res.json();
-        if (data.data && data.data.length > 0) displayImages(data.data);
-      } catch (e) {}
+        debug.innerHTML += 'ПОЛНЫЙ ОТВЕТ:\n' + JSON.stringify(data, null, 2) + '\n\n';
+
+        if (data.data && data.data.length > 0) {
+          displayImages(data.data);
+          debug.innerHTML += '✅ Изображения получены!';
+        } else {
+          debug.innerHTML += '❌ Нет изображений в ответе';
+        }
+      } catch (e) {
+        debug.innerHTML += '❌ ' + e.message;
+      }
     }
 
     async function editImage() {
       const mainFile = document.getElementById('main-edit-upload').files[0];
       if (!mainFile) return alert('Загрузите основное фото');
       const prompt = document.getElementById('edit-prompt').value || "Сделать более реалистичным";
+      const debug = document.getElementById('debug');
+      debug.innerHTML = 'Отправка запроса на редактирование...\n';
 
       // Показываем оригинал
       const originalUrl = URL.createObjectURL(mainFile);
       document.getElementById('original-preview').src = originalUrl;
       document.getElementById('edit-result').classList.remove('hidden');
-      document.getElementById('edited-gallery').innerHTML = '';
 
       try {
         const base64Main = await fileToBase64(mainFile);
@@ -178,14 +206,23 @@
             model: "grok-imagine-image",
             prompt: prompt,
             image: { url: base64Main },
-            n: 4,
-            response_format: "url",
             seed: Math.floor(Math.random() * 2147483647)
           })
         });
+
+        debug.innerHTML += `Статус: ${res.status}\n\n`;
         const data = await res.json();
-        if (data.data && data.data.length > 0) displayImages(data.data, true);
-      } catch (e) {}
+        debug.innerHTML += 'ПОЛНЫЙ ОТВЕТ:\n' + JSON.stringify(data, null, 2) + '\n\n';
+
+        if (data.data && data.data.length > 0) {
+          displayImages(data.data, true);  // true = редактирование
+          debug.innerHTML += '✅ Результат редактирования получен!';
+        } else {
+          debug.innerHTML += '❌ Нет результата редактирования';
+        }
+      } catch (e) {
+        debug.innerHTML += '❌ ' + e.message;
+      }
     }
 
     switchTab(0);
