@@ -141,7 +141,7 @@
 
         const res = await apiFetch('/v1/videos/generations', { method: 'POST', body: JSON.stringify(body) });
         const data = await res.json();
-        debug.innerHTML += `Статус генерации: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
+        debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
 
         if (!res.ok) throw new Error(data.error?.message || 'Ошибка');
 
@@ -151,20 +151,18 @@
           attempts++;
           const statusRes = await apiFetch(`/v1/videos/${requestId}`);
           const statusData = await statusRes.json();
-
           debug.innerHTML += `Polling #${attempts}: ${JSON.stringify(statusData)}\n`;
 
-          // Гибкая проверка статуса
-          const status = statusData.status || statusData.state || statusData.phase || statusData.status_code;
-          if (status === 'done' || status === 'completed' || statusData.video || statusData.url) {
+          const status = statusData.status || statusData.state || statusData.phase;
+          if (status === 'done' || statusData.video || statusData.url) {
             clearInterval(poll);
             currentVideoUrl = statusData.video?.url || statusData.url || statusData.output?.url;
             document.getElementById('video-player').src = currentVideoUrl;
-            statusEl.textContent = 'Готово! Смотрите и скачивайте видео';
+            statusEl.textContent = 'Готово!';
             debug.innerHTML += '✅ ВИДЕО ГОТОВО!';
           } else if (status === 'failed' || attempts > 60) {
             clearInterval(poll);
-            statusEl.textContent = 'Ошибка генерации видео';
+            statusEl.textContent = 'Ошибка генерации';
           }
         }, 3000);
       } catch (e) {
@@ -187,10 +185,12 @@
       gallery.innerHTML = '';
       images.forEach(img => {
         const url = img.url || '';
+        // Публичный прокси для предпросмотра (обходит CORS)
+        const previewSrc = `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
         const div = document.createElement('div');
         div.className = 'relative group';
         div.innerHTML = `
-          <img src="\( {url}" crossorigin="anonymous" class="w-full cursor-pointer" onclick="window.open(' \){url}', '_blank')" onerror="this.src='https://via.placeholder.com/400x500/64748b/ffffff?text=Нет+изображения'">
+          <img src="\( {previewSrc}" class="w-full cursor-pointer" onclick="window.open(' \){url}', '_blank')" onerror="this.src='https://via.placeholder.com/400x500/64748b/ffffff?text=Загрузка...'">
           <button onclick="downloadImage('${url}')" class="absolute bottom-4 right-4 bg-white/90 px-6 py-2 rounded-2xl text-sm hover:bg-indigo-600 hover:text-white transition">Скачать</button>
         `;
         gallery.appendChild(div);
