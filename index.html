@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GROK ADULT STUDIO 2.0 • Профессиональный генератор</title>
+  <title>GROK ADULT STUDIO 2.0 • Профессиональный генератор контента для взрослых</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background: #f8fafc; font-family: system-ui; }
@@ -17,8 +17,8 @@
   <div class="max-w-7xl mx-auto p-6">
     <header class="header text-white text-center py-16 rounded-3xl mb-12">
       <h1 class="text-6xl font-bold tracking-tight">GROK ADULT STUDIO</h1>
-      <p class="text-3xl mt-4">Профессиональный генератор  • 2026</p>
-      <p class="mt-3 text-indigo-100 text-xl">Высококачественный кская свобода</p>
+      <p class="text-3xl mt-4">Профессиональный генератор изображений и видео для взрослых • 2026</p>
+      <p class="mt-3 text-indigo-100 text-xl">Высококачественный контент • Реалистичные модели • Полная творческая свобода</p>
     </header>
 
     <div class="flex justify-center mb-10 border-b-4 border-indigo-200">
@@ -52,7 +52,6 @@
         <video id="video-player" controls class="w-full max-w-4xl mx-auto"></video>
         <button onclick="downloadVideo()" class="mt-8 bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-4 rounded-2xl text-lg">Скачать видео</button>
       </div>
-      <div id="video-debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
     </div>
 
     <!-- ИЗОБРАЖЕНИЯ + РЕДАКТИРОВАНИЕ С 4 ВАРИАНТАМИ -->
@@ -126,23 +125,22 @@
       const gallery = isEdit ? document.getElementById('edited-gallery') : document.getElementById('image-gallery');
       if (!isEdit) gallery.innerHTML = '';
       images.forEach(img => {
-        const url = img.url || '';
-        // НОВЫЙ ПРЕДПРОСМОТР МИНИАТЮР (corsproxy.io — самый стабильный для Японии)
-        const previewSrc = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+        const base64 = img.b64_json || '';
+        const src = base64 ? `data:image/jpeg;base64,${base64}` : '';
         const div = document.createElement('div');
         div.className = 'relative group';
         div.innerHTML = `
-          <img src="\( {previewSrc}" class="w-full cursor-pointer rounded-3xl" onclick="window.open(' \){url}', '_blank')">
-          <button onclick="downloadImage('${url}')" class="absolute bottom-4 right-4 bg-white/90 px-6 py-2 rounded-2xl text-sm hover:bg-indigo-600 hover:text-white transition">Скачать</button>
+          <img src="\( {src}" class="w-full cursor-pointer rounded-3xl" onclick="window.open(' \){src}', '_blank')">
+          <button onclick="downloadImage('${src}')" class="absolute bottom-4 right-4 bg-white/90 px-6 py-2 rounded-2xl text-sm hover:bg-indigo-600 hover:text-white transition">Скачать</button>
         `;
         gallery.appendChild(div);
       });
     }
 
-    function downloadImage(url) {
-      if (!url) return alert('Нет ссылки');
+    function downloadImage(src) {
+      if (!src) return alert('Нет изображения');
       const a = document.createElement('a');
-      a.href = url;
+      a.href = src;
       a.download = `adult-image-${Date.now()}.jpg`;
       a.click();
     }
@@ -153,7 +151,13 @@
       try {
         const res = await apiFetch('/v1/images/generations', {
           method: 'POST',
-          body: JSON.stringify({ model: "grok-imagine-image", prompt, n: 4, response_format: "url", seed: Math.floor(Math.random() * 2147483647) })
+          body: JSON.stringify({ 
+            model: "grok-imagine-image", 
+            prompt, 
+            n: 4, 
+            response_format: "b64_json", // ← БЕЗ ПРОКСИ
+            seed: Math.floor(Math.random() * 2147483647) 
+          })
         });
         const data = await res.json();
         if (data.data && data.data.length > 0) displayImages(data.data);
@@ -179,7 +183,7 @@
             prompt: prompt,
             image: { url: base64Main },
             n: 4,
-            response_format: "url",
+            response_format: "b64_json", // ← БЕЗ ПРОКСИ
             seed: Math.floor(Math.random() * 2147483647)
           })
         });
