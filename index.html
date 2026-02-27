@@ -11,7 +11,6 @@
     .tab-active { background: #4f46e5; color: white; font-weight: 700; }
     .card { background: white; border: 2px solid #e0e7ff; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05); }
     video, img { border-radius: 16px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
-    #debug, #video-debug { background: #f1f5f9; border: 2px solid #64748b; font-family: monospace; white-space: pre-wrap; font-size: 13px; max-height: 500px; overflow:auto; }
   </style>
 </head>
 <body class="text-gray-900 min-h-screen pb-20">
@@ -27,7 +26,7 @@
       <button onclick="switchTab(1)" id="tab1" class="px-14 py-5 text-2xl rounded-t-3xl">🖼️ Изображения и редактор</button>
     </div>
 
-    <!-- ВИДЕО СЕКЦИЯ (НЕ ТРОГАЕМ) -->
+    <!-- ВИДЕО СЕКЦИЯ (НЕ ТРОГАЕМ — ОСТАВЛЕНА КАК БЫЛА) -->
     <div id="section-video" class="card p-10 rounded-3xl">
       <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🎥 Генератор видео</h2>
       <div class="grid md:grid-cols-2 gap-10">
@@ -53,10 +52,9 @@
         <video id="video-player" controls class="w-full max-w-4xl mx-auto"></video>
         <button onclick="downloadVideo()" class="mt-8 bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-4 rounded-2xl text-lg">Скачать видео</button>
       </div>
-      <div id="video-debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
     </div>
 
-    <!-- ИЗОБРАЖЕНИЯ + РЕДАКТИРОВАНИЕ С 4 ВАРИАНТАМИ -->
+    <!-- ИЗОБРАЖЕНИЯ + РЕДАКТИРОВАНИЕ С 4 ВАРИАНТАМИ И ПРЕДПРОСМОТРОМ -->
     <div id="section-image" class="card p-10 rounded-3xl hidden">
       <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🖼️ Генератор и редактор изображений</h2>
       <div class="grid lg:grid-cols-2 gap-10">
@@ -81,7 +79,7 @@
         </div>
       </div>
 
-      <!-- 2 БЛОКА: ОРИГИНАЛ + 4 ВАРИАНТА -->
+      <!-- БЛОК С 2 КОЛОНКАМИ ДЛЯ РЕДАКТИРОВАНИЯ -->
       <div id="edit-result" class="mt-12 hidden grid md:grid-cols-2 gap-8">
         <div>
           <p class="text-sm font-medium text-gray-600 mb-2 text-center">Оригинальное фото</p>
@@ -94,7 +92,6 @@
       </div>
 
       <div id="image-gallery" class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6"></div>
-      <div id="debug" class="mt-12 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
     </div>
   </div>
 
@@ -152,28 +149,20 @@
     async function generateImages() {
       const prompt = document.getElementById('image-prompt').value.trim();
       if (!prompt) return alert('Введите описание');
-      const debug = document.getElementById('debug');
-      debug.innerHTML = 'Отправка запроса...\n';
-
       try {
         const res = await apiFetch('/v1/images/generations', {
           method: 'POST',
           body: JSON.stringify({ model: "grok-imagine-image", prompt, n: 4, response_format: "url", seed: Math.floor(Math.random() * 2147483647) })
         });
         const data = await res.json();
-        debug.innerHTML += `Статус: ${res.status}\n\n` + JSON.stringify(data, null, 2) + '\n\n';
         if (data.data && data.data.length > 0) displayImages(data.data);
-      } catch (e) {
-        debug.innerHTML += '❌ ' + e.message;
-      }
+      } catch (e) {}
     }
 
     async function editImage() {
       const mainFile = document.getElementById('main-edit-upload').files[0];
       if (!mainFile) return alert('Загрузите основное фото');
       const prompt = document.getElementById('edit-prompt').value || "Сделать более реалистичным";
-      const debug = document.getElementById('debug');
-      debug.innerHTML = 'Отправка запроса на редактирование (4 варианта)...\n';
 
       // Показываем оригинал
       const originalUrl = URL.createObjectURL(mainFile);
@@ -194,19 +183,9 @@
             seed: Math.floor(Math.random() * 2147483647)
           })
         });
-
         const data = await res.json();
-        debug.innerHTML += `Статус: ${res.status}\n\n` + JSON.stringify(data, null, 2) + '\n\n';
-
-        if (data.data && data.data.length > 0) {
-          displayImages(data.data, true);
-          debug.innerHTML += '✅ 4 варианта редактирования получены!';
-        } else {
-          debug.innerHTML += '❌ Нет вариантов';
-        }
-      } catch (e) {
-        debug.innerHTML += '❌ ' + e.message;
-      }
+        if (data.data && data.data.length > 0) displayImages(data.data, true);
+      } catch (e) {}
     }
 
     switchTab(0);
