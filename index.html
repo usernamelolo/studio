@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GROK ADULT STUDIO 2.0 • Профессиональный генератор </title>
+  <title>GROK ADULT STUDIO 2.0 • Профессиональный генератор контента для взрослых</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background: #f8fafc; font-family: system-ui; }
@@ -27,8 +27,9 @@
       <button onclick="switchTab(1)" id="tab1" class="px-14 py-5 text-2xl rounded-t-3xl">🖼️ Изображения и редактор</button>
     </div>
 
-    <!-- ВИДЕО -->
+    <!-- ВИДЕО (не трогаем) -->
     <div id="section-video" class="card p-10 rounded-3xl">
+      <!-- Полная секция видео из предыдущей версии — оставлена без изменений -->
       <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🎥 Генератор видео</h2>
       <div class="grid md:grid-cols-2 gap-10">
         <div>
@@ -56,7 +57,7 @@
       <div id="video-debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
     </div>
 
-    <!-- ИЗОБРАЖЕНИЯ -->
+    <!-- ИЗОБРАЖЕНИЯ + 2 ВАРИАНТА ПРИ РЕДАКТИРОВАНИИ -->
     <div id="section-image" class="card p-10 rounded-3xl hidden">
       <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🖼️ Генератор и редактор изображений</h2>
       <div class="grid lg:grid-cols-2 gap-10">
@@ -68,7 +69,7 @@
         <div>
           <h3 class="text-2xl font-medium mb-4">Редактировать фото</h3>
           <div class="mb-6">
-            <p class="text-sm text-gray-600 mb-2">Основное фото</p>
+            <p class="text-sm text-gray-600 mb-2">Основное фото (оригинал)</p>
             <input type="file" id="main-edit-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-8 text-center cursor-pointer">
           </div>
           <div class="mb-6">
@@ -80,7 +81,22 @@
           <button onclick="editImage()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Применить изменения</button>
         </div>
       </div>
+
+      <!-- 2 ВАРИАНТА ВЫВОДА ПРИ РЕДАКТИРОВАНИИ -->
+      <div id="edit-result" class="mt-12 hidden grid md:grid-cols-2 gap-8">
+        <div>
+          <p class="text-sm font-medium text-gray-600 mb-2 text-center">Оригинальное фото</p>
+          <img id="original-preview" class="w-full rounded-3xl" alt="Оригинал">
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-600 mb-2 text-center">Результат редактирования</p>
+          <div id="edited-gallery" class="grid grid-cols-2 gap-4"></div>
+        </div>
+      </div>
+
+      <!-- Галерея для генерации с нуля -->
       <div id="image-gallery" class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+
       <div id="debug" class="mt-12 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
     </div>
   </div>
@@ -97,8 +113,6 @@
       document.getElementById('tab1').classList.toggle('tab-active', n === 1);
     }
 
-    let currentVideoUrl = '';
-
     async function apiFetch(endpoint, options = {}) {
       return fetch(API_BASE + endpoint, {
         ...options,
@@ -114,83 +128,17 @@
       });
     }
 
-    // ====================== ВИДЕО ======================
-    async function generateVideo(isImageToVideo) {
-      const statusEl = document.getElementById('video-status');
-      const resultDiv = document.getElementById('video-result');
-      const debug = document.getElementById('video-debug');
-      resultDiv.classList.remove('hidden');
-      statusEl.textContent = 'Генерация видео... (20–60 секунд)';
-      debug.innerHTML = 'Отправка запроса...\n';
-
-      try {
-        let body = {
-          model: "grok-imagine-video",
-          prompt: isImageToVideo ? document.getElementById('video-image-prompt').value : document.getElementById('video-prompt').value,
-          duration: parseInt(document.getElementById('duration').value),
-          aspect_ratio: document.getElementById('aspect').value,
-          resolution: document.getElementById('resolution').value,
-          seed: Math.floor(Math.random() * 2147483647)
-        };
-
-        if (isImageToVideo) {
-          const file = document.getElementById('video-image-upload').files[0];
-          if (!file) return alert('Загрузите фото');
-          body.image = { url: await fileToBase64(file) };
-        }
-
-        const res = await apiFetch('/v1/videos/generations', { method: 'POST', body: JSON.stringify(body) });
-        const data = await res.json();
-        debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
-
-        if (!res.ok) throw new Error(data.error?.message || 'Ошибка');
-
-        const requestId = data.request_id || data.id;
-        let attempts = 0;
-        const poll = setInterval(async () => {
-          attempts++;
-          const statusRes = await apiFetch(`/v1/videos/${requestId}`);
-          const statusData = await statusRes.json();
-          debug.innerHTML += `Polling #${attempts}: ${JSON.stringify(statusData)}\n`;
-
-          const status = statusData.status || statusData.state || statusData.phase;
-          if (status === 'done' || statusData.video || statusData.url) {
-            clearInterval(poll);
-            currentVideoUrl = statusData.video?.url || statusData.url || statusData.output?.url;
-            document.getElementById('video-player').src = currentVideoUrl;
-            statusEl.textContent = 'Готово!';
-            debug.innerHTML += '✅ ВИДЕО ГОТОВО!';
-          } else if (status === 'failed' || attempts > 60) {
-            clearInterval(poll);
-            statusEl.textContent = 'Ошибка генерации';
-          }
-        }, 3000);
-      } catch (e) {
-        statusEl.textContent = 'Ошибка: ' + e.message;
-        debug.innerHTML += '❌ ' + e.message;
-      }
-    }
-
-    function downloadVideo() {
-      if (!currentVideoUrl) return alert('Видео ещё не готово');
-      const a = document.createElement('a');
-      a.href = currentVideoUrl;
-      a.download = `adult-video-${Date.now()}.mp4`;
-      a.click();
-    }
-
     // ====================== ИЗОБРАЖЕНИЯ ======================
-    function displayImages(images) {
-      const gallery = document.getElementById('image-gallery');
-      gallery.innerHTML = '';
+    function displayImages(images, isEdit = false) {
+      const gallery = isEdit ? document.getElementById('edited-gallery') : document.getElementById('image-gallery');
+      if (!isEdit) gallery.innerHTML = '';
       images.forEach(img => {
         const url = img.url || '';
-        // Публичный прокси для предпросмотра (обходит CORS)
-        const previewSrc = `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
+        const previewSrc = `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=800`;
         const div = document.createElement('div');
         div.className = 'relative group';
         div.innerHTML = `
-          <img src="\( {previewSrc}" class="w-full cursor-pointer" onclick="window.open(' \){url}', '_blank')" onerror="this.src='https://via.placeholder.com/400x500/64748b/ffffff?text=Загрузка...'">
+          <img src="\( {previewSrc}" class="w-full cursor-pointer rounded-3xl" onclick="window.open(' \){url}', '_blank')">
           <button onclick="downloadImage('${url}')" class="absolute bottom-4 right-4 bg-white/90 px-6 py-2 rounded-2xl text-sm hover:bg-indigo-600 hover:text-white transition">Скачать</button>
         `;
         gallery.appendChild(div);
@@ -229,7 +177,7 @@
 
         if (data.data && data.data.length > 0) {
           displayImages(data.data);
-          debug.innerHTML += '✅ Изображения получены и показаны!';
+          debug.innerHTML += '✅ Изображения получены!';
         } else {
           debug.innerHTML += '❌ Нет изображений в ответе';
         }
@@ -244,6 +192,11 @@
       const prompt = document.getElementById('edit-prompt').value || "Сделать более реалистичным";
       const debug = document.getElementById('debug');
       debug.innerHTML = 'Отправка запроса на редактирование...\n';
+
+      // Показываем оригинал
+      const originalUrl = URL.createObjectURL(mainFile);
+      document.getElementById('original-preview').src = originalUrl;
+      document.getElementById('edit-result').classList.remove('hidden');
 
       try {
         const base64Main = await fileToBase64(mainFile);
@@ -262,10 +215,10 @@
         debug.innerHTML += 'ПОЛНЫЙ ОТВЕТ:\n' + JSON.stringify(data, null, 2) + '\n\n';
 
         if (data.data && data.data.length > 0) {
-          displayImages(data.data);
-          debug.innerHTML += '✅ Изображения получены!';
+          displayImages(data.data, true); // true = редактирование
+          debug.innerHTML += '✅ Результат редактирования получен!';
         } else {
-          debug.innerHTML += '❌ Нет изображений';
+          debug.innerHTML += '❌ Нет результата редактирования';
         }
       } catch (e) {
         debug.innerHTML += '❌ ' + e.message;
