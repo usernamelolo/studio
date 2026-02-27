@@ -81,7 +81,7 @@
         </div>
       </div>
 
-      <!-- ДВА БЛОКА: ОРИГИНАЛ + 4 ВАРИАНТА -->
+      <!-- 2 БЛОКА: ОРИГИНАЛ + 4 ВАРИАНТА -->
       <div id="edit-result" class="mt-12 hidden grid md:grid-cols-2 gap-8">
         <div>
           <p class="text-sm font-medium text-gray-600 mb-2 text-center">Оригинальное фото</p>
@@ -93,9 +93,7 @@
         </div>
       </div>
 
-      <!-- Галерея обычной генерации -->
       <div id="image-gallery" class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6"></div>
-
       <div id="debug" class="mt-12 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
     </div>
   </div>
@@ -168,7 +166,7 @@
         debug.innerHTML += `Статус: ${res.status}\n\n` + JSON.stringify(data, null, 2) + '\n\n';
 
         if (data.data && data.data.length > 0) {
-          displayImages(data.data, true); // true = редактирование
+          displayImages(data.data, true);
           debug.innerHTML += '✅ 4 варианта редактирования получены!';
         } else {
           debug.innerHTML += '❌ Нет вариантов';
