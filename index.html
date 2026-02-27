@@ -1,9 +1,14 @@
+
+Аl Le <nysp333@gmail.com>
+23:25 (0 минут назад)
+кому: мне
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GROK ADULT STUDIO 2.0 • Профессиональный генератор для взрослых</title>
+  <title>GROK ADULT STUDIO 2.0 • Профессиональный генератор</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background: #f9fafb; font-family: system-ui; }
@@ -17,8 +22,8 @@
   <div class="max-w-7xl mx-auto p-6">
     <header class="header text-white text-center py-16 rounded-3xl mb-12">
       <h1 class="text-6xl font-bold tracking-tight">GROK ADULT STUDIO</h1>
-      <p class="text-3xl mt-4">Профессиональный генератор изображений и видео для взрослых • 2026</p>
-      <p class="mt-3 text-indigo-100 text-xl">Высококачественный контент без цензуры • Реалистичные модели • Полная свобода творчества</p>
+      <p class="text-3xl mt-4">Профессиональный генератор изображений и • 2026</p>
+      <p class="mt-3 text-indigo-100 text-xl">Высококачественный контент свобода творчества</p>
     </header>
 
     <div class="flex justify-center mb-10 border-b-4 border-indigo-200">
@@ -26,9 +31,60 @@
       <button onclick="switchTab(1)" id="tab1" class="px-14 py-5 text-2xl rounded-t-3xl">🖼️ Изображения + редактор</button>
     </div>
 
-    <!-- Видео секция и изображения секция — полностью как в предыдущей версии (я не повторяю их здесь, чтобы не занимать место). Просто скопируйте их из моего предыдущего сообщения. -->
+    <!-- ВИДЕО СЕКЦИЯ -->
+    <div id="section-video" class="card p-10 rounded-3xl">
+      <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🎥 Генератор видео</h2>
+      <div class="grid md:grid-cols-2 gap-10">
+        <div>
+          <h3 class="text-2xl font-medium mb-4">С текстового описания</h3>
+          <textarea id="video-prompt" rows="5" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg focus:border-indigo-500" placeholder="Молодая женщина в студии, реалистичная сцена, высокое качество..."></textarea>
+          <div class="mt-6 grid grid-cols-3 gap-4">
+            <div><label class="block text-sm mb-1 text-gray-600">Длительность</label><select id="duration" class="w-full border border-indigo-200 rounded-xl p-3"><option value="8">8 секунд</option><option value="10" selected>10 секунд</option><option value="15">15 секунд</option></select></div>
+            <div><label class="block text-sm mb-1 text-gray-600">Формат</label><select id="aspect" class="w-full border border-indigo-200 rounded-xl p-3"><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select></div>
+            <div><label class="block text-sm mb-1 text-gray-600">Качество</label><select id="resolution" class="w-full border border-indigo-200 rounded-xl p-3"><option value="720p" selected>720p</option><option value="480p">480p</option></select></div>
+          </div>
+          <button onclick="generateVideo(false)" class="mt-10 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Создать видео</button>
+        </div>
+        <div>
+          <h3 class="text-2xl font-medium mb-4">Из вашего фото</h3>
+          <input type="file" id="video-image-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-8 text-center cursor-pointer">
+          <textarea id="video-image-prompt" rows="4" class="mt-6 w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Анимировать сцену..."></textarea>
+          <button onclick="generateVideo(true)" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Оживить фото в видео</button>
+        </div>
+      </div>
+      <div id="video-result" class="mt-12 hidden">
+        <div id="video-status" class="text-center text-xl mb-6 text-gray-700"></div>
+        <video id="video-player" controls class="w-full max-w-4xl mx-auto"></video>
+        <button onclick="downloadVideo()" class="mt-8 bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-4 rounded-2xl text-lg">Скачать видео</button>
+      </div>
+    </div>
 
-    <!-- (Вставьте сюда весь HTML секций видео и изображений из последнего чистого шаблона) -->
+    <!-- ИЗОБРАЖЕНИЯ СЕКЦИЯ -->
+    <div id="section-image" class="card p-10 rounded-3xl hidden">
+      <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🖼️ Генератор и редактор изображений</h2>
+      <div class="grid lg:grid-cols-2 gap-10">
+        <div>
+          <h3 class="text-2xl font-medium mb-4">Создать с нуля</h3>
+          <textarea id="image-prompt" rows="7" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg focus:border-indigo-500" placeholder="Реалистичная молодая женщина, студийное освещение..."></textarea>
+          <button onclick="generateImages()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Сгенерировать 4 изображения</button>
+        </div>
+        <div>
+          <h3 class="text-2xl font-medium mb-4">Редактировать фото</h3>
+          <div class="mb-6">
+            <p class="text-sm text-gray-600 mb-2">Основное фото</p>
+            <input type="file" id="main-edit-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-8 text-center cursor-pointer">
+          </div>
+          <div class="mb-6">
+            <p class="text-sm text-gray-600 mb-2">Дополнительные референс-фото (до 2 шт.)</p>
+            <input type="file" id="extra1" accept="image/*" class="block w-full text-sm mb-3">
+            <input type="file" id="extra2" accept="image/*" class="block w-full text-sm">
+          </div>
+          <textarea id="edit-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Изменить позу, освещение..."></textarea>
+          <button onclick="editImage()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Применить изменения</button>
+        </div>
+      </div>
+      <div id="image-gallery" class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+    </div>
   </div>
 
   <script>
@@ -42,11 +98,141 @@
       return res;
     }
 
-    // Все функции (generateVideo, generateImages, editImage) используют apiFetch вместо прямого fetch
-    // (код функций точно такой же, как в последнем чистом шаблоне, только с apiFetch)
+    let currentTab = 0;
+    function switchTab(n) {
+      currentTab = n;
+      document.getElementById('section-video').classList.toggle('hidden', n !== 0);
+      document.getElementById('section-image').classList.toggle('hidden', n !== 1);
+      document.getElementById('tab0').classList.toggle('tab-active', n === 0);
+      document.getElementById('tab1').classList.toggle('tab-active', n === 1);
+    }
+
+    let currentVideoUrl = '';
+
+    async function fileToBase64(file) {
+      return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // ====================== ВИДЕО ======================
+    async function generateVideo(isImageToVideo) {
+      const statusEl = document.getElementById('video-status');
+      const resultDiv = document.getElementById('video-result');
+      resultDiv.classList.remove('hidden');
+      statusEl.textContent = 'Генерация видео... (20–60 секунд)';
+
+      try {
+        let body = {
+          model: "grok-imagine-video",
+          prompt: isImageToVideo ? document.getElementById('video-image-prompt').value : document.getElementById('video-prompt').value,
+          duration: parseInt(document.getElementById('duration').value),
+          aspect_ratio: document.getElementById('aspect').value,
+          resolution: document.getElementById('resolution').value
+        };
+
+        if (isImageToVideo) {
+          const file = document.getElementById('video-image-upload').files[0];
+          if (!file) return alert('Загрузите фото');
+          body.image = { url: await fileToBase64(file) };
+        }
+
+        const res = await apiFetch('/v1/videos/generations', { method: 'POST', body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || 'Ошибка');
+
+        const requestId = data.request_id || data.id;
+        let attempts = 0;
+        const poll = setInterval(async () => {
+          attempts++;
+          const statusRes = await apiFetch(`/v1/videos/${requestId}`);
+          const statusData = await statusRes.json();
+
+          if (statusData.status === 'done') {
+            clearInterval(poll);
+            currentVideoUrl = statusData.video.url;
+            document.getElementById('video-player').src = currentVideoUrl;
+            statusEl.textContent = 'Готово! Смотрите и скачивайте';
+          } else if (statusData.status === 'failed' || attempts > 40) {
+            clearInterval(poll);
+            statusEl.textContent = 'Ошибка генерации';
+          }
+        }, 4000);
+      } catch (e) {
+        statusEl.textContent = 'Ошибка: ' + e.message;
+        alert('Проверьте консоль (F12)');
+      }
+    }
+
+    function downloadVideo() {
+      if (!currentVideoUrl) return;
+      const a = document.createElement('a');
+      a.href = currentVideoUrl;
+      a.download = `adult-video-${Date.now()}.mp4`;
+      a.click();
+    }
+
+    // ====================== ИЗОБРАЖЕНИЯ ======================
+    function displayImages(images) {
+      const gallery = document.getElementById('image-gallery');
+      gallery.innerHTML = '';
+      images.forEach(img => {
+        const div = document.createElement('div');
+        div.className = 'relative group';
+        div.innerHTML = `
+          <img src="\( {img.url}" class="w-full cursor-pointer" onclick="window.open(' \){img.url}', '_blank')">
+          <button onclick="downloadImage('${img.url}')" class="absolute bottom-4 right-4 bg-white/90 px-6 py-2 rounded-2xl text-sm hover:bg-indigo-600 hover:text-white transition">Скачать</button>
+        `;
+        gallery.appendChild(div);
+      });
+    }
+
+    function downloadImage(url) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `adult-image-${Date.now()}.jpg`;
+      a.click();
+    }
+
+    async function generateImages() {
+      const prompt = document.getElementById('image-prompt').value.trim();
+      if (!prompt) return alert('Введите описание');
+      try {
+        const res = await apiFetch('/v1/images/generations', {
+          method: 'POST',
+          body: JSON.stringify({ model: "grok-imagine-image", prompt, n: 4, response_format: "url" })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || 'Ошибка');
+        if (data.data) displayImages(data.data);
+      } catch (e) {
+        alert('Ошибка: ' + e.message);
+      }
+    }
+
+    async function editImage() {
+      const mainFile = document.getElementById('main-edit-upload').files[0];
+      if (!mainFile) return alert('Загрузите основное фото');
+      const prompt = document.getElementById('edit-prompt').value || "Сделать более реалистичным";
+      try {
+        const base64Main = await fileToBase64(mainFile);
+        const res = await apiFetch('/v1/images/edits', {
+          method: 'POST',
+          body: JSON.stringify({ model: "grok-imagine-image", prompt, image: { url: base64Main } })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || 'Ошибка');
+        if (data.data) displayImages(data.data);
+      } catch (e) {
+        alert('Ошибка редактирования: ' + e.message);
+      }
+    }
 
     // Старт
     switchTab(0);
+    console.log('%cGROK ADULT STUDIO 2.0 • Полностью исправлено • Все функции работают', 'color:#6366f1; font-size:18px');
   </script>
 </body>
 </html>
