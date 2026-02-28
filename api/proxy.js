@@ -5,7 +5,8 @@ module.exports = async (req, res) => {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const targetUrl = 'https://api.x.ai' + req.url;
+  const path = req.url.replace(/^\/api\/proxy/, '');
+  const targetUrl = 'https://api.x.ai' + path;
 
   try {
     const response = await fetch(targetUrl, {
