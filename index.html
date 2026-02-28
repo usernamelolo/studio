@@ -44,7 +44,7 @@
         <video id="video-player" controls class="w-full max-w-4xl mx-auto"></video>
         <div class="flex gap-4 justify-center mt-6">
           <button onclick="downloadVideo()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-4 rounded-2xl text-lg">Скачать видео</button>
-          <button onclick="stopVideoGeneration()" class="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-2xl text-lg">Остановить генерацию</button>
+          <button onclick="stopVideoGeneration()" id="stop-btn" class="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-2xl text-lg">Остановить генерацию</button>
         </div>
       </div>
       <div id="video-debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
@@ -132,22 +132,16 @@
 
       try {
         const base64Main = await fileToBase64(file);
+        const seed1 = Math.floor(Math.random() * 2147483647);
+        const seed2 = Math.floor(Math.random() * 2147483647);
 
-        // Первый вариант (seed 1)
-        const res1 = await apiFetch('/v1/images/edits', {
-          method: 'POST',
-          body: JSON.stringify({ model: "grok-imagine-image", prompt, image: { url: base64Main }, n: 1, response_format: "b64_json", seed: Math.floor(Math.random() * 2147483647) })
-        });
+        const res1 = await apiFetch('/v1/images/edits', { method: 'POST', body: JSON.stringify({ model: "grok-imagine-image", prompt, image: { url: base64Main }, n: 1, response_format: "b64_json", seed: seed1 }) });
         const data1 = await res1.json();
-        debug.innerHTML += `Вариант 1 статус: ${res1.status}\n` + JSON.stringify(data1, null, 2) + '\n\n';
+        debug.innerHTML += `Вариант 1 (seed ${seed1}) статус: ${res1.status}\n` + JSON.stringify(data1, null, 2) + '\n\n';
 
-        // Второй вариант (seed 2 — сильно отличается)
-        const res2 = await apiFetch('/v1/images/edits', {
-          method: 'POST',
-          body: JSON.stringify({ model: "grok-imagine-image", prompt, image: { url: base64Main }, n: 1, response_format: "b64_json", seed: Math.floor(Math.random() * 2147483647) })
-        });
+        const res2 = await apiFetch('/v1/images/edits', { method: 'POST', body: JSON.stringify({ model: "grok-imagine-image", prompt, image: { url: base64Main }, n: 1, response_format: "b64_json", seed: seed2 }) });
         const data2 = await res2.json();
-        debug.innerHTML += `Вариант 2 статус: ${res2.status}\n` + JSON.stringify(data2, null, 2) + '\n\n';
+        debug.innerHTML += `Вариант 2 (seed ${seed2}) статус: ${res2.status}\n` + JSON.stringify(data2, null, 2) + '\n\n';
 
         if (data1.data && data1.data[0] && data2.data && data2.data[0]) {
           document.getElementById('variant1').src = `data:image/jpeg;base64,${data1.data[0].b64_json}`;
@@ -168,7 +162,10 @@
       const statusEl = document.getElementById('video-status');
       const resultDiv = document.getElementById('video-result');
       const debug = document.getElementById('video-debug');
+      const stopBtn = document.getElementById('stop-btn');
+
       resultDiv.classList.remove('hidden');
+      stopBtn.style.display = 'inline-block';
       statusEl.textContent = 'Генерация видео... (20–60 секунд)';
       debug.innerHTML = 'Отправка запроса...\n';
 
@@ -199,15 +196,24 @@
           const statusData = await statusRes.json();
           debug.innerHTML += `Polling #${attempts}: ${JSON.stringify(statusData)}\n`;
 
-          // ИСПРАВЛЕНИЕ: ловим url напрямую (как в твоём дебаге)
-          if (statusData.video && statusData.video.url) {
+          // НАДЁЖНАЯ ПРОВЕРКА URL (именно как в твоём дебаге)
+          let videoUrl = null;
+          if (statusData.video && statusData.video.url) videoUrl = statusData.video.url;
+          else if (statusData.url) videoUrl = statusData.url;
+
+          if (videoUrl && videoUrl.includes('vidgen.x.ai')) {
             clearInterval(videoInterval);
             videoInterval = null;
-            currentVideoUrl = statusData.video.url;
-            document.getElementById('video-player').src = currentVideoUrl;
+            currentVideoUrl = videoUrl;
+            const player = document.getElementById('video-player');
+            player.src = currentVideoUrl;
+            player.load();
             statusEl.textContent = 'Готово!';
-            debug.innerHTML += '✅ Видео готово!';
-          } else if (statusData.status === 'failed' || attempts >= 4) { // 4 попытки при модерации
+            debug.innerHTML += '✅ Видео готово и загружено в плеер!';
+            return;
+          }
+
+          if (statusData.status === 'failed' || attempts >= 40) {
             clearInterval(videoInterval);
             videoInterval = null;
             statusEl.textContent = 'Ошибка генерации';
