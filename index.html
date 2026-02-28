@@ -14,7 +14,7 @@
   </style>
 </head>
 <body class="text-gray-900 min-h-screen pb-20">
-  <!-- ЛОГИН С ВИДИМЫМ ПОЛЕМ ИМЕНИ (значение в Vercel) -->
+  <!-- ЛОГИН ПО ИМЕНИ + ПАРОЛЮ -->
   <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
     <div class="bg-white p-12 rounded-3xl shadow-2xl max-w-md w-full">
       <h1 class="text-5xl font-bold text-center mb-10 text-indigo-700">AI Генератор Контента</h1>
@@ -28,7 +28,6 @@
           <input id="password" type="password" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg focus:border-indigo-500" placeholder="Введите пароль">
         </div>
         <button onclick="login()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Войти</button>
-        <p class="text-center text-sm text-gray-500">Имя и пароль хранятся только в настройках Vercel</p>
       </div>
     </div>
   </div>
@@ -132,7 +131,7 @@
           alert('Неверное имя пользователя или пароль');
         }
       } catch (e) {
-        alert('Ошибка сервера — проверь api/auth.js и SITE_USERNAME / SITE_PASSWORD в Vercel');
+        alert('Ошибка сервера — проверь api/auth.js и переменные в Vercel');
       }
     }
 
@@ -160,7 +159,7 @@
       if (!img.src) return alert('Изображение не готово');
       const a = document.createElement('a');
       a.href = img.src;
-      a.download = `variant-\( {num}- \){Date.now()}.jpg`;
+      a.download = `variant-${num}-${Date.now()}.jpg`;
       a.click();
     }
 
