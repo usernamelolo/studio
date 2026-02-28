@@ -14,16 +14,21 @@
   </style>
 </head>
 <body class="text-gray-900 min-h-screen pb-20">
-  <!-- ЛОГИН ТОЛЬКО ПО ПАРОЛЮ -->
+  <!-- ЛОГИН ПО ИМЕНИ + ПАРОЛЮ -->
   <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
     <div class="bg-white p-12 rounded-3xl shadow-2xl max-w-md w-full">
       <h1 class="text-5xl font-bold text-center mb-10 text-indigo-700">AI Генератор</h1>
       <div class="space-y-6">
         <div>
+          <label class="block text-sm font-medium text-gray-600 mb-2">Имя пользователя</label>
+          <input id="username" type="text" value="admin" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg focus:border-indigo-500">
+        </div>
+        <div>
           <label class="block text-sm font-medium text-gray-600 mb-2">Пароль доступа</label>
           <input id="password" type="password" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg focus:border-indigo-500" placeholder="Введите пароль">
         </div>
         <button onclick="login()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Войти</button>
+        <p class="text-center text-sm text-gray-500">Имя: admin • Пароль в настройках Vercel</p>
       </div>
     </div>
   </div>
@@ -107,14 +112,15 @@
     }
 
     async function login() {
+      const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
-      if (!password) return alert('Введите пароль');
+      if (!username || !password) return alert('Заполни оба поля');
 
       try {
         const res = await fetch('/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password })
+          body: JSON.stringify({ username, password })
         });
         const data = await res.json();
 
@@ -123,10 +129,10 @@
           document.getElementById('main-content').classList.remove('hidden');
           switchTab(0);
         } else {
-          alert('Неверный пароль');
+          alert('Неверное имя пользователя или пароль');
         }
       } catch (e) {
-        alert('Ошибка сервера — проверь, что api/auth.js развернут и SITE_PASSWORD настроен');
+        alert('Ошибка соединения с сервером. Убедись, что файл api/auth.js загружен и SITE_PASSWORD настроен в Vercel');
       }
     }
 
@@ -164,7 +170,7 @@
       document.getElementById('video-debug').innerHTML += '🛑 Генерация остановлена пользователем\n';
     }
 
-    async function editImage() {
+    async function editImage() { /* тот же код, что был раньше */ 
       const file = document.getElementById('main-edit-upload').files[0];
       if (!file) return alert('Загрузите фото');
       const prompt = document.getElementById('edit-prompt').value || "Улучшить качество";
@@ -195,7 +201,7 @@
       }
     }
 
-    async function generateVideo() {
+    async function generateVideo() { /* тот же код, что был раньше */ 
       const file = document.getElementById('video-image-upload').files[0];
       if (!file) return alert('Загрузите фото');
 
@@ -287,6 +293,7 @@
       a.click();
     }
 
+    // Запуск
     switchTab(0);
   </script>
 </body>
