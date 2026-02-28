@@ -11,6 +11,7 @@
     .tab-active { background: #4f46e5; color: white; font-weight: 700; }
     .card { background: white; border: 2px solid #e0e7ff; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05); }
     video, img { border-radius: 16px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+    input, select, textarea, button { font-size: 1.1rem; }
   </style>
 </head>
 <body class="text-gray-900 min-h-screen pb-20">
@@ -40,11 +41,10 @@
         <button onclick="logout()" class="bg-white/20 hover:bg-white/30 text-white px-8 py-4 rounded-2xl text-lg transition w-full md:w-auto">Выйти</button>
       </header>
 
-      <!-- ВЕРТИКАЛЬНЫЕ ВКЛАДКИ -->
+      <!-- ВЕРТИКАЛЬНЫЕ ВКЛАДКИ СВЕРХУ ВНИЗ -->
       <div class="flex flex-col gap-3 items-center mb-10">
         <button onclick="switchTab(0)" id="tab0" class="tab-active w-full max-w-xs px-10 py-5 text-2xl rounded-3xl">🎥 Видео из фото</button>
         <button onclick="switchTab(1)" id="tab1" class="w-full max-w-xs px-10 py-5 text-2xl rounded-3xl border-2 border-indigo-200">🖼️ Изображения из фото</button>
-        <button onclick="switchTab(2)" id="tab2" class="w-full max-w-xs px-10 py-5 text-2xl rounded-3xl border-2 border-indigo-200">📝 Генерация из текста</button>
       </div>
 
       <!-- ВИДЕО ИЗ ФОТО -->
@@ -95,21 +95,6 @@
 
         <div id="debug" class="mt-12 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
       </div>
-
-      <!-- ГЕНЕРАЦИЯ КАРТИНОК ИЗ ТЕКСТА -->
-      <div id="section-text" class="card p-6 rounded-3xl hidden">
-        <h2 class="text-3xl font-semibold mb-6 text-indigo-700">📝 Генерация картинок из текста</h2>
-        <div class="max-w-2xl mx-auto">
-          <textarea id="text-prompt" rows="6" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="......."></textarea>
-          <button onclick="generateTextImages()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Сгенерировать 2 изображения</button>
-        </div>
-
-        <div id="text-result" class="mt-12 hidden grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div id="text-gallery" class="grid grid-cols-2 gap-4"></div>
-        </div>
-
-        <div id="text-debug" class="mt-12 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
-      </div>
     </div>
   </div>
 
@@ -123,10 +108,8 @@
       currentTab = n;
       document.getElementById('section-video').classList.toggle('hidden', n !== 0);
       document.getElementById('section-image').classList.toggle('hidden', n !== 1);
-      document.getElementById('section-text').classList.toggle('hidden', n !== 2);
       document.getElementById('tab0').classList.toggle('tab-active', n === 0);
       document.getElementById('tab1').classList.toggle('tab-active', n === 1);
-      document.getElementById('tab2').classList.toggle('tab-active', n === 2);
     }
 
     async function login() {
@@ -173,11 +156,12 @@
       });
     }
 
-    function downloadImage(src, num) {
-      if (!src) return alert('Изображение не готово');
+    function downloadImage(num) {
+      const img = document.getElementById('variant' + num);
+      if (!img.src) return alert('Изображение не готово');
       const a = document.createElement('a');
-      a.href = src;
-      a.download = `image-\( {num}- \){Date.now()}.jpg`;
+      a.href = img.src;
+      a.download = `variant-\( {num}- \){Date.now()}.jpg`;
       a.click();
     }
 
@@ -199,55 +183,20 @@
       try {
         const base64Main = await fileToBase64(file);
         const seed1 = Math.floor(Math.random() * 2147483647);
-        const seed2 = (seed1 + 987654321) % 2147483647;
+        const seed2 = (seed1 + 987654321) % 2147483647; // СИЛЬНЫЙ OFFSET — теперь картинки сильно разные
 
         const res1 = await apiFetch('/v1/images/edits', { method: 'POST', body: JSON.stringify({ model: "grok-imagine-image", prompt, image: { url: base64Main }, n: 1, response_format: "b64_json", seed: seed1 }) });
         const data1 = await res1.json();
-        debug.innerHTML += `Вариант 1 статус: ${res1.status}\n` + JSON.stringify(data1, null, 2) + '\n\n';
+        debug.innerHTML += `Вариант 1 (seed ${seed1}) статус: ${res1.status}\n` + JSON.stringify(data1, null, 2) + '\n\n';
 
         const res2 = await apiFetch('/v1/images/edits', { method: 'POST', body: JSON.stringify({ model: "grok-imagine-image", prompt, image: { url: base64Main }, n: 1, response_format: "b64_json", seed: seed2 }) });
         const data2 = await res2.json();
-        debug.innerHTML += `Вариант 2 статус: ${res2.status}\n` + JSON.stringify(data2, null, 2) + '\n\n';
+        debug.innerHTML += `Вариант 2 (seed ${seed2}) статус: ${res2.status}\n` + JSON.stringify(data2, null, 2) + '\n\n';
 
         if (data1.data && data1.data[0] && data2.data && data2.data[0]) {
           document.getElementById('variant1').src = `data:image/jpeg;base64,${data1.data[0].b64_json}`;
           document.getElementById('variant2').src = `data:image/jpeg;base64,${data2.data[0].b64_json}`;
           document.getElementById('image-result').classList.remove('hidden');
-        }
-      } catch (e) {
-        debug.innerHTML += '❌ ' + e.message;
-      }
-    }
-
-    async function generateTextImages() {
-      const prompt = document.getElementById('text-prompt').value.trim();
-      if (!prompt) return alert('Введите описание');
-      const debug = document.getElementById('text-debug');
-      debug.innerHTML = 'Отправка запроса...\n';
-      document.getElementById('text-result').classList.add('hidden');
-      document.getElementById('text-gallery').innerHTML = '';
-
-      try {
-        const res = await apiFetch('/v1/images/generations', {
-          method: 'POST',
-          body: JSON.stringify({ model: "grok-imagine-image", prompt, n: 2, response_format: "b64_json", seed: Math.floor(Math.random() * 2147483647) })
-        });
-        const data = await res.json();
-        debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
-
-        if (data.data && data.data.length > 0) {
-          const gallery = document.getElementById('text-gallery');
-          data.data.forEach((img, i) => {
-            const src = `data:image/jpeg;base64,${img.b64_json}`;
-            const div = document.createElement('div');
-            div.className = 'relative group';
-            div.innerHTML = `
-              <img src="\( {src}" class="w-full cursor-pointer rounded-3xl" onclick="window.open(' \){src}', '_blank')">
-              <button onclick="downloadImage('${src}', ${i+1})" class="absolute bottom-4 right-4 bg-white/90 px-6 py-2 rounded-2xl text-sm hover:bg-indigo-600 hover:text-white transition">Скачать</button>
-            `;
-            gallery.appendChild(div);
-          });
-          document.getElementById('text-result').classList.remove('hidden');
         }
       } catch (e) {
         debug.innerHTML += '❌ ' + e.message;
