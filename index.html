@@ -316,11 +316,11 @@
 
           if (isModerationReject) {
             failedAttempts++;
-            if (failedAttempts >= 5) {
+            if (failedAttempts >= 1) {
               clearInterval(videoInterval);
               videoInterval = null;
-              statusEl.textContent = 'Видео отклонено модерацией после 5 попыток';
-              debug.innerHTML += '❌ Видео отклонено модерацией после 5 попыток\n';
+              statusEl.textContent = 'Видео отклонено модерацией после 1 попыток';
+              debug.innerHTML += '❌ Видео отклонено модерацией после 1 попыток\n';
               return;
             }
           }
