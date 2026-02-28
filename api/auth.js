@@ -6,13 +6,15 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'POST') {
-    const { password } = req.body || {};
-    const correct = process.env.SITE_PASSWORD;
+    const { username, password } = req.body || {};
+    const correctPassword = process.env.SITE_PASSWORD;
 
-    if (!correct) return res.status(500).json({ success: false, message: 'Пароль не настроен' });
-    if (password === correct) return res.status(200).json({ success: true });
+    if (!correctPassword) return res.status(500).json({ success: false, message: 'Пароль не настроен в Vercel' });
+    if (username === 'admin' && password === correctPassword) {
+      return res.status(200).json({ success: true });
+    }
     return res.status(401).json({ success: false });
   }
 
-  res.status(405).json({ success: false });
+  res.status(405).json({ success: false, message: 'Method Not Allowed' });
 };
