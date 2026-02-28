@@ -14,7 +14,7 @@
   </style>
 </head>
 <body class="text-gray-900 min-h-screen pb-20">
-  <!-- ЛОГИН ТОЛЬКО ПО ПАРОЛЮ (имя скрыто в Vercel) -->
+  <!-- ЛОГИН С ВИДИМЫМ ПОЛЕМ ИМЕНИ (значение в Vercel) -->
   <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
     <div class="bg-white p-12 rounded-3xl shadow-2xl max-w-md w-full">
       <h1 class="text-5xl font-bold text-center mb-10 text-indigo-700">AI Генератор Контента</h1>
@@ -160,7 +160,7 @@
       if (!img.src) return alert('Изображение не готово');
       const a = document.createElement('a');
       a.href = img.src;
-      a.download = `variant-${num}-${Date.now()}.jpg`;
+      a.download = `variant-\( {num}- \){Date.now()}.jpg`;
       a.click();
     }
 
