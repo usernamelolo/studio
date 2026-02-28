@@ -14,26 +14,21 @@
   </style>
 </head>
 <body class="text-gray-900 min-h-screen pb-20">
-  <!-- LOGIN SCREEN -->
-  <div id="login-screen" class="login-bg min-h-screen flex items-center justify-center">
+  <!-- ЛОГИН ТОЛЬКО ПО ПАРОЛЮ -->
+  <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
     <div class="bg-white p-12 rounded-3xl shadow-2xl max-w-md w-full">
-      <h1 class="text-5xl font-bold text-center mb-8 text-indigo-700">Вход в систему</h1>
+      <h1 class="text-5xl font-bold text-center mb-10 text-indigo-700">AI Генератор</h1>
       <div class="space-y-6">
         <div>
-          <label class="block text-sm font-medium text-gray-600 mb-2">Имя пользователя</label>
-          <input id="username" type="text" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg focus:border-indigo-500" placeholder="admin">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-2">Пароль</label>
-          <input id="password" type="password" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg focus:border-indigo-500" placeholder="••••••">
+          <label class="block text-sm font-medium text-gray-600 mb-2">Пароль доступа</label>
+          <input id="password" type="password" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg focus:border-indigo-500" placeholder="Введите пароль">
         </div>
         <button onclick="login()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Войти</button>
-        <p class="text-center text-sm text-gray-500">Для теста: admin / 123456</p>
       </div>
     </div>
   </div>
 
-  <!-- MAIN GENERATOR -->
+  <!-- ГЛАВНАЯ СТРАНИЦА -->
   <div id="main-content" class="hidden">
     <div class="max-w-7xl mx-auto p-6">
       <header class="header text-white text-center py-12 rounded-3xl mb-12 flex justify-between items-center px-12">
@@ -46,16 +41,16 @@
         <button onclick="switchTab(1)" id="tab1" class="px-14 py-5 text-2xl rounded-t-3xl">🖼️ Изображения из фото</button>
       </div>
 
-      <!-- ВИДЕО ИЗ ФОТО + АВТОСТОП ПОСЛЕ 5 НЕУДАЧ -->
+      <!-- ВИДЕО ИЗ ФОТО (8 сек, 9:16, 480p по умолчанию) -->
       <div id="section-video" class="card p-10 rounded-3xl">
         <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🎥 Видео из загруженного фото</h2>
         <div class="max-w-2xl mx-auto">
           <input type="file" id="video-image-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-8 text-center cursor-pointer mb-6">
           <textarea id="video-image-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите желаемую анимацию..."></textarea>
           <div class="grid grid-cols-3 gap-4 mt-6">
-            <div><label class="block text-sm mb-1 text-gray-600">Длительность</label><select id="duration" class="w-full border border-indigo-200 rounded-xl p-3"><option value="8">8 секунд</option><option value="10" selected>10 секунд</option><option value="15">15 секунд</option></select></div>
-            <div><label class="block text-sm mb-1 text-gray-600">Формат</label><select id="aspect" class="w-full border border-indigo-200 rounded-xl p-3"><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select></div>
-            <div><label class="block text-sm mb-1 text-gray-600">Качество</label><select id="resolution" class="w-full border border-indigo-200 rounded-xl p-3"><option value="720p" selected>720p</option><option value="480p">480p</option></select></div>
+            <div><label class="block text-sm mb-1 text-gray-600">Длительность</label><select id="duration" class="w-full border border-indigo-200 rounded-xl p-3"><option value="8" selected>8 секунд</option><option value="10">10 секунд</option><option value="15">15 секунд</option></select></div>
+            <div><label class="block text-sm mb-1 text-gray-600">Формат</label><select id="aspect" class="w-full border border-indigo-200 rounded-xl p-3"><option value="16:9">16:9</option><option value="9:16" selected>9:16</option><option value="1:1">1:1</option></select></div>
+            <div><label class="block text-sm mb-1 text-gray-600">Качество</label><select id="resolution" class="w-full border border-indigo-200 rounded-xl p-3"><option value="720p">720p</option><option value="480p" selected>480p</option></select></div>
           </div>
           <button onclick="generateVideo()" class="mt-10 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Создать видео</button>
         </div>
@@ -102,31 +97,6 @@
     let videoInterval = null;
     let currentVideoUrl = '';
 
-    // ===== АВТОРИЗАЦИЯ =====
-    function checkAuth() {
-      if (localStorage.getItem('authenticated') === 'true') {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('main-content').classList.remove('hidden');
-      }
-    }
-
-    function login() {
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value.trim();
-      if (username === 'admin' && password === '123456') {
-        localStorage.setItem('authenticated', 'true');
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('main-content').classList.remove('hidden');
-      } else {
-        alert('Неверное имя пользователя или пароль');
-      }
-    }
-
-    function logout() {
-      localStorage.removeItem('authenticated');
-      location.reload();
-    }
-
     let currentTab = 0;
     function switchTab(n) {
       currentTab = n;
@@ -136,11 +106,38 @@
       document.getElementById('tab1').classList.toggle('tab-active', n === 1);
     }
 
+    async function login() {
+      const password = document.getElementById('password').value.trim();
+      if (!password) return alert('Введите пароль');
+
+      try {
+        const res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          document.getElementById('login-screen').classList.add('hidden');
+          document.getElementById('main-content').classList.remove('hidden');
+          switchTab(0);
+        } else {
+          alert('Неверный пароль');
+        }
+      } catch (e) {
+        alert('Ошибка сервера — проверь, что api/auth.js развернут и SITE_PASSWORD настроен');
+      }
+    }
+
+    function logout() {
+      document.getElementById('main-content').classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('password').value = '';
+    }
+
     async function apiFetch(endpoint, options = {}) {
-      return fetch(API_BASE + endpoint, {
-        ...options,
-        headers: { ...options.headers, 'Content-Type': 'application/json' }
-      });
+      return fetch(API_BASE + endpoint, { ...options, headers: { ...options.headers, 'Content-Type': 'application/json' } });
     }
 
     async function fileToBase64(file) {
@@ -161,10 +158,8 @@
     }
 
     function stopVideoGeneration() {
-      if (videoInterval) {
-        clearInterval(videoInterval);
-        videoInterval = null;
-      }
+      if (videoInterval) clearInterval(videoInterval);
+      videoInterval = null;
       document.getElementById('video-status').textContent = 'Генерация остановлена';
       document.getElementById('video-debug').innerHTML += '🛑 Генерация остановлена пользователем\n';
     }
@@ -184,11 +179,11 @@
 
         const res1 = await apiFetch('/v1/images/edits', { method: 'POST', body: JSON.stringify({ model: "grok-imagine-image", prompt, image: { url: base64Main }, n: 1, response_format: "b64_json", seed: seed1 }) });
         const data1 = await res1.json();
-        debug.innerHTML += `Вариант 1 (seed ${seed1}) статус: ${res1.status}\n` + JSON.stringify(data1, null, 2) + '\n\n';
+        debug.innerHTML += `Вариант 1 статус: ${res1.status}\n` + JSON.stringify(data1, null, 2) + '\n\n';
 
         const res2 = await apiFetch('/v1/images/edits', { method: 'POST', body: JSON.stringify({ model: "grok-imagine-image", prompt, image: { url: base64Main }, n: 1, response_format: "b64_json", seed: seed2 }) });
         const data2 = await res2.json();
-        debug.innerHTML += `Вариант 2 (seed ${seed2}) статус: ${res2.status}\n` + JSON.stringify(data2, null, 2) + '\n\n';
+        debug.innerHTML += `Вариант 2 статус: ${res2.status}\n` + JSON.stringify(data2, null, 2) + '\n\n';
 
         if (data1.data && data1.data[0] && data2.data && data2.data[0]) {
           document.getElementById('variant1').src = `data:image/jpeg;base64,${data1.data[0].b64_json}`;
@@ -258,11 +253,7 @@
             return;
           }
 
-          // === АВТО-ОСТАНОВКА ПОСЛЕ 5 НЕУДАЧ ===
-          const isModerationReject = 
-            (statusData.error && statusData.error.includes('content moderation')) ||
-            (statusData.error && statusData.error.includes('rejected')) ||
-            statusData.status === 'failed';
+          const isModerationReject = (statusData.error && statusData.error.includes('content moderation')) || (statusData.error && statusData.error.includes('rejected')) || statusData.status === 'failed';
 
           if (isModerationReject) {
             failedAttempts++;
@@ -296,7 +287,7 @@
       a.click();
     }
 
-    checkAuth();
+    switchTab(0);
   </script>
 </body>
 </html>
