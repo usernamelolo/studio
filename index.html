@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AI Генератор Контента</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -11,45 +11,46 @@
     .tab-active { background: #4f46e5; color: white; font-weight: 700; }
     .card { background: white; border: 2px solid #e0e7ff; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05); }
     video, img { border-radius: 16px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+    input, select, textarea, button { font-size: 1.1rem; }
   </style>
 </head>
 <body class="text-gray-900 min-h-screen pb-20">
-  <!-- ЛОГИН ПО ИМЕНИ + ПАРОЛЮ -->
-  <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
-    <div class="bg-white p-12 rounded-3xl shadow-2xl max-w-md w-full">
-      <h1 class="text-5xl font-bold text-center mb-10 text-indigo-700">AI Генератор Контента</h1>
+  <!-- ЛОГИН ПО ИМЕНИ + ПАРОЛЮ (мобильная версия) -->
+  <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50 px-4">
+    <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
+      <h1 class="text-4xl font-bold text-center mb-10 text-indigo-700">AI Генератор Контента</h1>
       <div class="space-y-6">
         <div>
           <label class="block text-sm font-medium text-gray-600 mb-2">Имя пользователя</label>
-          <input id="username" type="text" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg focus:border-indigo-500" placeholder="Введите имя пользователя">
+          <input id="username" type="text" value="admin" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-5 text-lg focus:border-indigo-500">
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-600 mb-2">Пароль доступа</label>
-          <input id="password" type="password" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg focus:border-indigo-500" placeholder="Введите пароль">
+          <input id="password" type="password" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-5 text-lg focus:border-indigo-500" placeholder="Введите пароль">
         </div>
-        <button onclick="login()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Войти</button>
+        <button onclick="login()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-6 rounded-3xl transition">Войти</button>
       </div>
     </div>
   </div>
 
-  <!-- ГЛАВНАЯ СТРАНИЦА -->
+  <!-- ГЛАВНАЯ СТРАНИЦА (мобильная оптимизация) -->
   <div id="main-content" class="hidden">
-    <div class="max-w-7xl mx-auto p-6">
-      <header class="header text-white text-center py-12 rounded-3xl mb-12 flex justify-between items-center px-12">
-        <h1 class="text-5xl font-bold tracking-tight">AI Генератор Контента</h1>
-        <button onclick="logout()" class="bg-white/20 hover:bg-white/30 text-white px-8 py-3 rounded-2xl text-lg transition">Выйти</button>
+    <div class="max-w-7xl mx-auto p-4 md:p-6">
+      <header class="header text-white text-center py-8 rounded-3xl mb-8 flex flex-col md:flex-row justify-between items-center gap-4 px-6">
+        <h1 class="text-3xl md:text-5xl font-bold tracking-tight">AI Генератор Контента</h1>
+        <button onclick="logout()" class="bg-white/20 hover:bg-white/30 text-white px-8 py-4 rounded-2xl text-lg transition w-full md:w-auto">Выйти</button>
       </header>
 
-      <div class="flex justify-center mb-10 border-b-4 border-indigo-200">
-        <button onclick="switchTab(0)" id="tab0" class="tab-active px-14 py-5 text-2xl rounded-t-3xl">🎥 Видео из фото</button>
-        <button onclick="switchTab(1)" id="tab1" class="px-14 py-5 text-2xl rounded-t-3xl">🖼️ Изображения из фото</button>
+      <div class="flex justify-center mb-8 border-b-4 border-indigo-200 overflow-x-auto pb-1">
+        <button onclick="switchTab(0)" id="tab0" class="tab-active px-10 py-4 text-xl rounded-t-3xl whitespace-nowrap">🎥 Видео из фото</button>
+        <button onclick="switchTab(1)" id="tab1" class="px-10 py-4 text-xl rounded-t-3xl whitespace-nowrap">🖼️ Изображения из фото</button>
       </div>
 
       <!-- ВИДЕО ИЗ ФОТО -->
-      <div id="section-video" class="card p-10 rounded-3xl">
-        <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🎥 Видео из загруженного фото</h2>
+      <div id="section-video" class="card p-6 rounded-3xl">
+        <h2 class="text-3xl font-semibold mb-6 text-indigo-700">🎥 Видео из загруженного фото</h2>
         <div class="max-w-2xl mx-auto">
-          <input type="file" id="video-image-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-8 text-center cursor-pointer mb-6">
+          <input type="file" id="video-image-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-6 text-center cursor-pointer mb-6">
           <textarea id="video-image-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите желаемую анимацию..."></textarea>
           <div class="grid grid-cols-3 gap-4 mt-6">
             <div><label class="block text-sm mb-1 text-gray-600">Длительность</label><select id="duration" class="w-full border border-indigo-200 rounded-xl p-3"><option value="8" selected>8 секунд</option><option value="10">10 секунд</option><option value="15">15 секунд</option></select></div>
@@ -61,33 +62,33 @@
         <div id="video-result" class="mt-12 hidden">
           <div id="video-status" class="text-center text-xl mb-6 text-gray-700"></div>
           <video id="video-player" controls class="w-full max-w-4xl mx-auto"></video>
-          <div class="flex gap-4 justify-center mt-6">
-            <button onclick="downloadVideo()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-4 rounded-2xl text-lg">Скачать видео</button>
-            <button onclick="stopVideoGeneration()" id="stop-btn" class="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-2xl text-lg">Остановить генерацию</button>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+            <button onclick="downloadVideo()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-5 rounded-2xl text-lg flex-1">Скачать видео</button>
+            <button onclick="stopVideoGeneration()" id="stop-btn" class="bg-red-600 hover:bg-red-700 text-white px-8 py-5 rounded-2xl text-lg flex-1">Остановить генерацию</button>
           </div>
         </div>
         <div id="video-debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
       </div>
 
       <!-- ИЗОБРАЖЕНИЯ ИЗ ФОТО -->
-      <div id="section-image" class="card p-10 rounded-3xl hidden">
-        <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🖼️ Изображения из загруженного фото</h2>
+      <div id="section-image" class="card p-6 rounded-3xl hidden">
+        <h2 class="text-3xl font-semibold mb-6 text-indigo-700">🖼️ Изображения из загруженного фото</h2>
         <div class="max-w-2xl mx-auto">
-          <input type="file" id="main-edit-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-8 text-center cursor-pointer mb-6">
+          <input type="file" id="main-edit-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-6 text-center cursor-pointer mb-6">
           <textarea id="edit-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите желаемые изменения..."></textarea>
           <button onclick="editImage()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Сгенерировать 2 варианта</button>
         </div>
 
-        <div id="image-result" class="mt-12 hidden grid md:grid-cols-2 gap-8">
+        <div id="image-result" class="mt-12 hidden grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
             <p class="text-sm font-medium text-gray-600 mb-2 text-center">Вариант 1</p>
             <img id="variant1" class="w-full rounded-3xl" alt="Вариант 1">
-            <button onclick="downloadImage(1)" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl">Скачать вариант 1</button>
+            <button onclick="downloadImage(1)" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-5 rounded-2xl text-lg">Скачать вариант 1</button>
           </div>
           <div>
             <p class="text-sm font-medium text-gray-600 mb-2 text-center">Вариант 2</p>
             <img id="variant2" class="w-full rounded-3xl" alt="Вариант 2">
-            <button onclick="downloadImage(2)" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl">Скачать вариант 2</button>
+            <button onclick="downloadImage(2)" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-5 rounded-2xl text-lg">Скачать вариант 2</button>
           </div>
         </div>
 
@@ -131,14 +132,14 @@
           alert('Неверное имя пользователя или пароль');
         }
       } catch (e) {
-        alert('Ошибка сервера — проверь api/auth.js и переменные в Vercel');
+        alert('Ошибка сервера — проверь api/auth.js и SITE_USERNAME / SITE_PASSWORD в Vercel');
       }
     }
 
     function logout() {
       document.getElementById('main-content').classList.add('hidden');
       document.getElementById('login-screen').classList.remove('hidden');
-      document.getElementById('username').value = '';
+      document.getElementById('username').value = 'admin';
       document.getElementById('password').value = '';
     }
 
@@ -159,7 +160,7 @@
       if (!img.src) return alert('Изображение не готово');
       const a = document.createElement('a');
       a.href = img.src;
-      a.download = `variant-${num}-${Date.now()}.jpg`;
+      a.download = `variant-\( {num}- \){Date.now()}.jpg`;
       a.click();
     }
 
