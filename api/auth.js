@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
     const correctPassword = process.env.SITE_PASSWORD;
 
     if (!correctPassword) return res.status(500).json({ success: false, message: 'Пароль не настроен в Vercel' });
-    if (username === 'admin' && password === correctPassword) {
+    if (username === 'nysp' && password === correctPassword) {
       return res.status(200).json({ success: true });
     }
     return res.status(401).json({ success: false });
