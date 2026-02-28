@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GROK ADULT STUDIO 2.0 • Профессиональный генератор контента для взрослых</title>
+  <title>AI Генератор Контента</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background: #f8fafc; font-family: system-ui; }
@@ -16,36 +16,28 @@
 <body class="text-gray-900 min-h-screen pb-20">
   <div class="max-w-7xl mx-auto p-6">
     <header class="header text-white text-center py-16 rounded-3xl mb-12">
-      <h1 class="text-6xl font-bold tracking-tight">GROK ADULT STUDIO</h1>
-      <p class="text-3xl mt-4">Профессиональный генератор изображений и видео для взрослых • 2026</p>
-      <p class="mt-3 text-indigo-100 text-xl">Высококачественный контент • Реалистичные модели • Полная творческая свобода</p>
+      <h1 class="text-6xl font-bold tracking-tight">AI Генератор Контента</h1>
+      <p class="text-3xl mt-4">Профессиональный инструмент для создания изображений и видео</p>
+      <p class="mt-3 text-indigo-100 text-xl">Высокое качество • Быстрая обработка • Полная свобода творчества</p>
     </header>
 
     <div class="flex justify-center mb-10 border-b-4 border-indigo-200">
-      <button onclick="switchTab(0)" id="tab0" class="tab-active px-14 py-5 text-2xl rounded-t-3xl">🎥 Генератор видео</button>
-      <button onclick="switchTab(1)" id="tab1" class="px-14 py-5 text-2xl rounded-t-3xl">🖼️ Изображения и редактор</button>
+      <button onclick="switchTab(0)" id="tab0" class="tab-active px-14 py-5 text-2xl rounded-t-3xl">🎥 Видео из фото</button>
+      <button onclick="switchTab(1)" id="tab1" class="px-14 py-5 text-2xl rounded-t-3xl">🖼️ Изображения из фото</button>
     </div>
 
-    <!-- ВИДЕО СЕКЦИЯ (НЕ ТРОГАЕМ) + DEBUG -->
+    <!-- ВИДЕО ИЗ ФОТО + DEBUG -->
     <div id="section-video" class="card p-10 rounded-3xl">
-      <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🎥 Генератор видео</h2>
-      <div class="grid md:grid-cols-2 gap-10">
-        <div>
-          <h3 class="text-2xl font-medium mb-4">С текстового описания</h3>
-          <textarea id="video-prompt" rows="5" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg focus:border-indigo-500" placeholder="Молодая женщина в студии, реалистичная сцена, высокое качество..."></textarea>
-          <div class="mt-6 grid grid-cols-3 gap-4">
-            <div><label class="block text-sm mb-1 text-gray-600">Длительность</label><select id="duration" class="w-full border border-indigo-200 rounded-xl p-3"><option value="8">8 секунд</option><option value="10" selected>10 секунд</option><option value="15">15 секунд</option></select></div>
-            <div><label class="block text-sm mb-1 text-gray-600">Формат</label><select id="aspect" class="w-full border border-indigo-200 rounded-xl p-3"><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select></div>
-            <div><label class="block text-sm mb-1 text-gray-600">Качество</label><select id="resolution" class="w-full border border-indigo-200 rounded-xl p-3"><option value="720p" selected>720p</option><option value="480p">480p</option></select></div>
-          </div>
-          <button onclick="generateVideo(false)" class="mt-10 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Создать видео</button>
+      <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🎥 Видео из загруженного фото</h2>
+      <div class="max-w-2xl mx-auto">
+        <input type="file" id="video-image-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-8 text-center cursor-pointer mb-6">
+        <textarea id="video-image-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите желаемую анимацию..."></textarea>
+        <div class="grid grid-cols-3 gap-4 mt-6">
+          <div><label class="block text-sm mb-1 text-gray-600">Длительность</label><select id="duration" class="w-full border border-indigo-200 rounded-xl p-3"><option value="8">8 секунд</option><option value="10" selected>10 секунд</option><option value="15">15 секунд</option></select></div>
+          <div><label class="block text-sm mb-1 text-gray-600">Формат</label><select id="aspect" class="w-full border border-indigo-200 rounded-xl p-3"><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select></div>
+          <div><label class="block text-sm mb-1 text-gray-600">Качество</label><select id="resolution" class="w-full border border-indigo-200 rounded-xl p-3"><option value="720p" selected>720p</option><option value="480p">480p</option></select></div>
         </div>
-        <div>
-          <h3 class="text-2xl font-medium mb-4">Из вашего фото</h3>
-          <input type="file" id="video-image-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-8 text-center cursor-pointer">
-          <textarea id="video-image-prompt" rows="4" class="mt-6 w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Анимировать сцену..."></textarea>
-          <button onclick="generateVideo(true)" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Оживить фото в видео</button>
-        </div>
+        <button onclick="generateVideo()" class="mt-10 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Создать видео</button>
       </div>
       <div id="video-result" class="mt-12 hidden">
         <div id="video-status" class="text-center text-xl mb-6 text-gray-700"></div>
@@ -55,43 +47,28 @@
       <div id="video-debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
     </div>
 
-    <!-- ИЗОБРАЖЕНИЯ + РЕДАКТИРОВАНИЕ С 4 ВАРИАНТАМИ И ПРЕДПРОСМОТРОМ -->
+    <!-- ИЗОБРАЖЕНИЯ ИЗ ФОТО + DEBUG -->
     <div id="section-image" class="card p-10 rounded-3xl hidden">
-      <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🖼️ Генератор и редактор изображений</h2>
-      <div class="grid lg:grid-cols-2 gap-10">
+      <h2 class="text-4xl font-semibold mb-8 text-indigo-700">🖼️ Изображения из загруженного фото</h2>
+      <div class="max-w-2xl mx-auto">
+        <input type="file" id="main-edit-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-8 text-center cursor-pointer mb-6">
+        <textarea id="edit-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите желаемые изменения..."></textarea>
+        <button onclick="editImage()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Сгенерировать 2 варианта</button>
+      </div>
+
+      <div id="image-result" class="mt-12 hidden grid md:grid-cols-2 gap-8">
         <div>
-          <h3 class="text-2xl font-medium mb-4">Создать с нуля</h3>
-          <textarea id="image-prompt" rows="7" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg focus:border-indigo-500" placeholder="Реалистичная молодая женщина, студийное освещение, высокое качество..."></textarea>
-          <button onclick="generateImages()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Сгенерировать 4 изображения</button>
+          <p class="text-sm font-medium text-gray-600 mb-2 text-center">Вариант 1</p>
+          <img id="variant1" class="w-full rounded-3xl" alt="Вариант 1">
+          <button onclick="downloadImage(1)" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl">Скачать вариант 1</button>
         </div>
         <div>
-          <h3 class="text-2xl font-medium mb-4">Редактировать фото</h3>
-          <div class="mb-6">
-            <p class="text-sm text-gray-600 mb-2">Основное фото (оригинал)</p>
-            <input type="file" id="main-edit-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-8 text-center cursor-pointer">
-          </div>
-          <div class="mb-6">
-            <p class="text-sm text-gray-600 mb-2">Дополнительные референс-фото (до 2 шт.)</p>
-            <input type="file" id="extra1" accept="image/*" class="block w-full text-sm mb-3">
-            <input type="file" id="extra2" accept="image/*" class="block w-full text-sm">
-          </div>
-          <textarea id="edit-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Изменить позу, освещение, стиль..."></textarea>
-          <button onclick="editImage()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Применить изменения (4 варианта)</button>
+          <p class="text-sm font-medium text-gray-600 mb-2 text-center">Вариант 2</p>
+          <img id="variant2" class="w-full rounded-3xl" alt="Вариант 2">
+          <button onclick="downloadImage(2)" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl">Скачать вариант 2</button>
         </div>
       </div>
 
-      <div id="edit-result" class="mt-12 hidden grid md:grid-cols-2 gap-8">
-        <div>
-          <p class="text-sm font-medium text-gray-600 mb-2 text-center">Оригинальное фото</p>
-          <img id="original-preview" class="w-full rounded-3xl" alt="Оригинал">
-        </div>
-        <div>
-          <p class="text-sm font-medium text-gray-600 mb-2 text-center">4 варианта редактирования</p>
-          <div id="edited-gallery" class="grid grid-cols-2 gap-4"></div>
-        </div>
-      </div>
-
-      <div id="image-gallery" class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6"></div>
       <div id="debug" class="mt-12 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
     </div>
   </div>
@@ -123,84 +100,54 @@
       });
     }
 
-    function displayImages(images, isEdit = false) {
-      const gallery = isEdit ? document.getElementById('edited-gallery') : document.getElementById('image-gallery');
-      if (!isEdit) gallery.innerHTML = '';
-      images.forEach(img => {
-        const base64 = img.b64_json || '';
-        const src = base64 ? `data:image/jpeg;base64,${base64}` : '';
-        const div = document.createElement('div');
-        div.className = 'relative group';
-        div.innerHTML = `
-          <img src="\( {src}" class="w-full cursor-pointer rounded-3xl" onclick="window.open(' \){src}', '_blank')">
-          <button onclick="downloadImage('${src}')" class="absolute bottom-4 right-4 bg-white/90 px-6 py-2 rounded-2xl text-sm hover:bg-indigo-600 hover:text-white transition">Скачать</button>
-        `;
-        gallery.appendChild(div);
-      });
-    }
-
-    function downloadImage(src) {
-      if (!src) return alert('Нет изображения');
+    function downloadImage(num) {
+      const img = document.getElementById('variant' + num);
+      if (!img.src) return alert('Изображение не готово');
       const a = document.createElement('a');
-      a.href = src;
-      a.download = `adult-image-${Date.now()}.jpg`;
+      a.href = img.src;
+      a.download = `variant-\( {num}- \){Date.now()}.jpg`;
       a.click();
     }
 
-    async function generateImages() {
-      const prompt = document.getElementById('image-prompt').value.trim();
-      if (!prompt) return alert('Введите описание');
+    async function editImage() {
+      const file = document.getElementById('main-edit-upload').files[0];
+      if (!file) return alert('Загрузите фото');
+      const prompt = document.getElementById('edit-prompt').value || "Улучшить качество";
       const debug = document.getElementById('debug');
       debug.innerHTML = 'Отправка запроса...\n';
-      try {
-        const res = await apiFetch('/v1/images/generations', {
-          method: 'POST',
-          body: JSON.stringify({ model: "grok-imagine-image", prompt, n: 4, response_format: "b64_json", seed: Math.floor(Math.random() * 2147483647) })
-        });
-        const data = await res.json();
-        debug.innerHTML += `Статус: ${res.status}\n\n` + JSON.stringify(data, null, 2) + '\n\n';
-        if (data.data && data.data.length > 0) displayImages(data.data);
-      } catch (e) {
-        debug.innerHTML += '❌ ' + e.message;
-      }
-    }
-
-    async function editImage() {
-      const mainFile = document.getElementById('main-edit-upload').files[0];
-      if (!mainFile) return alert('Загрузите основное фото');
-      const prompt = document.getElementById('edit-prompt').value || "Сделать более реалистичным";
-      const debug = document.getElementById('debug');
-      debug.innerHTML = 'Отправка запроса на редактирование (4 варианта)...\n';
-
-      const originalUrl = URL.createObjectURL(mainFile);
-      document.getElementById('original-preview').src = originalUrl;
-      document.getElementById('edit-result').classList.remove('hidden');
-      document.getElementById('edited-gallery').innerHTML = '';
+      document.getElementById('image-result').classList.add('hidden');
 
       try {
-        const base64Main = await fileToBase64(mainFile);
+        const base64Main = await fileToBase64(file);
         const res = await apiFetch('/v1/images/edits', {
           method: 'POST',
           body: JSON.stringify({
             model: "grok-imagine-image",
             prompt: prompt,
             image: { url: base64Main },
-            n: 4,
+            n: 2,
             response_format: "b64_json",
             seed: Math.floor(Math.random() * 2147483647)
           })
         });
         const data = await res.json();
         debug.innerHTML += `Статус: ${res.status}\n\n` + JSON.stringify(data, null, 2) + '\n\n';
-        if (data.data && data.data.length > 0) displayImages(data.data, true);
+
+        if (data.data && data.data.length === 2) {
+          document.getElementById('variant1').src = `data:image/jpeg;base64,${data.data[0].b64_json}`;
+          document.getElementById('variant2').src = `data:image/jpeg;base64,${data.data[1].b64_json}`;
+          document.getElementById('image-result').classList.remove('hidden');
+        }
       } catch (e) {
         debug.innerHTML += '❌ ' + e.message;
       }
     }
 
-    // ====================== ВИДЕО С DEBUG ======================
+    // ====================== ВИДЕО ИЗ ФОТО + DEBUG ======================
     let currentVideoUrl = '';
-    async function generateVideo(isImageToVideo) {
+    async function generateVideo() {
+      const file = document.getElementById('video-image-upload').files[0];
+      if (!file) return alert('Загрузите фото');
       const statusEl = document.getElementById('video-status');
       const resultDiv = document.getElementById('video-result');
       const debug = document.getElementById('video-debug');
@@ -209,20 +156,16 @@
       debug.innerHTML = 'Отправка запроса...\n';
 
       try {
-        let body = {
+        const base64Image = await fileToBase64(file);
+        const body = {
           model: "grok-imagine-video",
-          prompt: isImageToVideo ? document.getElementById('video-image-prompt').value : document.getElementById('video-prompt').value,
+          prompt: document.getElementById('video-image-prompt').value || "Анимировать сцену",
           duration: parseInt(document.getElementById('duration').value),
           aspect_ratio: document.getElementById('aspect').value,
           resolution: document.getElementById('resolution').value,
+          image: { url: base64Image },
           seed: Math.floor(Math.random() * 2147483647)
         };
-
-        if (isImageToVideo) {
-          const file = document.getElementById('video-image-upload').files[0];
-          if (!file) return alert('Загрузите фото');
-          body.image = { url: await fileToBase64(file) };
-        }
 
         const res = await apiFetch('/v1/videos/generations', { method: 'POST', body: JSON.stringify(body) });
         const data = await res.json();
@@ -258,7 +201,7 @@
       if (!currentVideoUrl) return alert('Видео ещё не готово');
       const a = document.createElement('a');
       a.href = currentVideoUrl;
-      a.download = `adult-video-${Date.now()}.mp4`;
+      a.download = `video-${Date.now()}.mp4`;
       a.click();
     }
 
