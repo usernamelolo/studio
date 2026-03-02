@@ -8,11 +8,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const KV_URL = process.env.KV_REST_API_URL;
+    const KV_URL = process.env.KV_REST_API_URL || process.env.KV_URL;
     const KV_TOKEN = process.env.KV_REST_API_TOKEN;
 
+    // === ДЕБАГ ВЕРСЕЛЬ ЛОГИ ===
+    console.log('KV_REST_API_URL is set:', !!KV_URL);
+    console.log('KV_REST_API_TOKEN is set:', !!KV_TOKEN);
+    console.log('User from query:', req.query.user);
+
     if (!KV_URL || !KV_TOKEN) {
-      return res.status(500).json({ error: 'KV_REST_API_URL или KV_REST_API_TOKEN не найден в Environment Variables' });
+      return res.status(500).json({ 
+        error: 'KV_REST_API_URL или KV_REST_API_TOKEN НЕ НАЙДЕНЫ в Environment Variables Vercel' 
+      });
     }
 
     let user, action, data;
@@ -29,21 +36,23 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'user is required' });
     }
 
-    const key = `results:${user}`;
+    const key = 'results:' + user;
 
     if (action === 'save') {
-      const getRes = await fetch(`\( {KV_URL}/get/ \){encodeURIComponent(key)}`, {
-        headers: { Authorization: `Bearer ${KV_TOKEN}` }
+      const getUrl = KV_URL + '/get/' + encodeURIComponent(key);
+      const getRes = await fetch(getUrl, {
+        headers: { Authorization: 'Bearer ' + KV_TOKEN }
       });
       const getData = await getRes.json();
       let list = getData.result ? JSON.parse(getData.result) : [];
 
       list.unshift({ ...data, id: Date.now(), date: new Date().toISOString() });
 
-      await fetch(`\( {KV_URL}/set/ \){encodeURIComponent(key)}`, {
+      const setUrl = KV_URL + '/set/' + encodeURIComponent(key);
+      await fetch(setUrl, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${KV_TOKEN}`,
+          Authorization: 'Bearer ' + KV_TOKEN,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ value: JSON.stringify(list.slice(0, 300)) })
@@ -53,8 +62,9 @@ export default async function handler(req, res) {
     }
 
     if (action === 'get') {
-      const getRes = await fetch(`\( {KV_URL}/get/ \){encodeURIComponent(key)}`, {
-        headers: { Authorization: `Bearer ${KV_TOKEN}` }
+      const getUrl = KV_URL + '/get/' + encodeURIComponent(key);
+      const getRes = await fetch(getUrl, {
+        headers: { Authorization: 'Bearer ' + KV_TOKEN }
       });
       const getData = await getRes.json();
       const list = getData.result ? JSON.parse(getData.result) : [];
