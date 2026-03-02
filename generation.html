@@ -33,13 +33,23 @@
     <a href="admin.html" id="admin-tab" class="w-full max-w-xs px-10 py-5 text-2xl rounded-3xl border-2 border-indigo-200 text-center hover:bg-indigo-50 hidden">👑 Админ панель</a>
   </div>
 
-  <!-- ВИДЕО ИЗ ФОТО С КНОПКОЙ ОТМЕНЫ -->
+  <!-- ВИДЕО ИЗ ФОТО -->
   <div id="section-video" class="card p-6 mx-4 rounded-3xl">
     <h2 class="text-3xl font-semibold mb-6 text-indigo-700">🎥 Видео из загруженного фото</h2>
     <div class="max-w-2xl mx-auto">
       <input type="file" id="video-image-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-6 text-center cursor-pointer mb-6">
       <textarea id="video-image-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите желаемую анимацию..."></textarea>
-      <div id="video-options" class="grid grid-cols-3 gap-4 mt-6"></div>
+      
+      <!-- Выбор длительности (только для nysp) -->
+      <div class="mt-6">
+        <label class="block text-sm mb-2 text-gray-600">Длительность видео</label>
+        <select id="duration" class="w-full border border-indigo-200 rounded-xl p-3">
+          <option value="8" selected>8 секунд</option>
+          <option value="10">10 секунд</option>
+          <option value="15">15 секунд</option>
+        </select>
+      </div>
+
       <div class="mt-6 text-center text-indigo-600 font-medium" id="video-limit-info"></div>
       <button onclick="generateVideo()" class="mt-10 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Создать видео</button>
     </div>
@@ -118,7 +128,12 @@
     }
 
     async function apiFetch(endpoint, options = {}) {
-      return fetch(API_BASE + endpoint, { ...options, headers: { ...options.headers, 'Content-Type': 'application/json' } });
+      const method = options.method || 'GET';
+      return fetch(API_BASE + endpoint, {
+        method: method,
+        headers: { ...options.headers, 'Content-Type': 'application/json' },
+        body: (method === 'POST' && options.body) ? options.body : undefined
+      });
     }
 
     async function saveGeneration(type, url, prompt) {
@@ -139,7 +154,7 @@
       });
     }
 
-    // ==================== ВИДЕО С КНОПКОЙ ОТМЕНЫ ====================
+    // ==================== ВИДЕО ====================
     async function generateVideo() {
       const file = document.getElementById('video-image-upload').files[0];
       if (!file) return alert('Загрузите фото');
@@ -158,10 +173,12 @@
 
       try {
         const base64Image = await fileToBase64(file);
+        const duration = currentUser === 'nysp' ? parseInt(document.getElementById('duration').value) : 8;
+
         const body = {
           model: "grok-imagine-video",
           prompt: document.getElementById('video-image-prompt').value || "Анимировать сцену",
-          duration: 8,
+          duration: duration,
           aspect_ratio: "9:16",
           resolution: "480p",
           image: { url: base64Image },
