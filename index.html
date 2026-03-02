@@ -21,7 +21,7 @@
       const data = await res.json();
       if (data.success) {
         localStorage.setItem('currentUser', username);
-        window.location.href = 'index.html';
+        window.location.href = 'generation.html';
       } else alert('Неверный логин или пароль');
     }
   </script>
