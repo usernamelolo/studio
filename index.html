@@ -39,14 +39,10 @@
     <div class="max-w-2xl mx-auto">
       <input type="file" id="video-image-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-6 text-center cursor-pointer mb-6">
       <textarea id="video-image-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите желаемую анимацию..."></textarea>
-      
       <div id="video-options" class="grid grid-cols-3 gap-4 mt-6"></div>
-      
       <div class="mt-6 text-center text-indigo-600 font-medium" id="video-limit-info"></div>
-      
       <button onclick="generateVideo()" class="mt-10 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Создать видео</button>
     </div>
-
     <div id="video-result" class="mt-12 hidden">
       <video id="video-player" controls class="w-full max-w-4xl mx-auto rounded-3xl"></video>
       <div class="flex gap-4 mt-6">
@@ -86,7 +82,6 @@
   <script>
     const API_BASE = "/api/proxy";
     let currentUser = null;
-    let currentRole = null;
     let lastVideoBase64 = '';
     let lastVideoPrompt = '';
     let videoInterval = null;
@@ -98,7 +93,9 @@
         return false;
       }
       document.getElementById('current-user').textContent = `👤 ${currentUser}`;
-      if (currentUser === 'nysp') document.getElementById('admin-tab').classList.remove('hidden');
+      if (currentUser === 'nysp') {
+        document.getElementById('admin-tab').classList.remove('hidden');
+      }
       return true;
     }
 
@@ -115,64 +112,66 @@
       document.getElementById('tab' + n).classList.add('tab-active');
     }
 
-    async function apiGenerations(action, data = {}) {
-      const res = await fetch('/api/generations', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ user: currentUser, action, data })
-      });
-      return res.json();
+    async function apiFetch(endpoint, options = {}) {
+      return fetch(API_BASE + endpoint, { ...options, headers: { ...options.headers, 'Content-Type': 'application/json' } });
     }
 
     async function saveGeneration(type, url, prompt) {
       try {
-        await apiGenerations('save', { type, url, prompt });
+        await fetch('/api/generations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: currentUser, action: 'save', data: { type, url, prompt } })
+        });
       } catch(e) {}
     }
 
-    // ==================== ВИДЕО ====================
-    async function generateVideo() {
-      // ... (полная функция генерации видео из предыдущих версий)
-      // после успешной генерации добавь:
-      lastVideoBase64 = base64Image;
-      lastVideoPrompt = document.getElementById('video-image-prompt').value || "Анимировать сцену";
-      document.getElementById('extend-btn').style.display = 'block';
-      await saveGeneration('video', currentVideoUrl, lastVideoPrompt);
-    }
-
-    async function extendVideo() {
-      // полная функция продления видео (из предыдущей версии)
-    }
-
-    // ==================== ИЗОБРАЖЕНИЯ ИЗ ФОТО ====================
-    async function editImage() {
-      // ... генерация 1 картинки
-      if (data.data && data.data[0]) {
-        const src = `data:image/jpeg;base64,${data.data[0].b64_json}`;
-        document.getElementById('variant1').src = src;
-        document.getElementById('image-result').classList.remove('hidden');
-        await saveGeneration('image', src, document.getElementById('edit-prompt').value);
-      }
-    }
-
-    // ==================== ГЕНЕРАЦИЯ ИЗ ТЕКСТА ====================
+    // ИСПРАВЛЕННАЯ ФУНКЦИЯ — ОШИБКА ИСПРАВЛЕНА
     async function generateTextImages() {
-      // ... генерация 2 картинок
-      if (data.data && data.data.length) {
-        const gallery = document.getElementById('text-gallery');
-        gallery.innerHTML = '';
-        data.data.forEach(img => {
-          const src = `data:image/jpeg;base64,${img.b64_json}`;
-          const div = document.createElement('div');
-          div.innerHTML = `<img src="${src}" class="w-full rounded-3xl">`;
-          gallery.appendChild(div);
-          saveGeneration('image', src, document.getElementById('text-prompt').value);
+      const prompt = document.getElementById('text-prompt').value.trim();
+      if (!prompt) return alert('Введите описание');
+
+      const debug = document.getElementById('text-debug');
+      debug.innerHTML = 'Отправка запроса...\n';
+      document.getElementById('text-result').classList.add('hidden');
+      document.getElementById('text-gallery').innerHTML = '';
+
+      try {
+        const res = await apiFetch('/v1/images/generations', {
+          method: 'POST',
+          body: JSON.stringify({ 
+            model: "grok-imagine-image", 
+            prompt, 
+            n: 2, 
+            response_format: "b64_json", 
+            seed: Math.floor(Math.random() * 2147483647) 
+          })
         });
-        document.getElementById('text-result').classList.remove('hidden');
+
+        const data = await res.json(); // ← ВОТ ГЛАВНАЯ СТРОКА, КОТОРОЙ НЕ ХВАТАЛО
+
+        debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
+
+        if (data.data && data.data.length > 0) {
+          const gallery = document.getElementById('text-gallery');
+          gallery.innerHTML = '';
+          data.data.forEach((img, i) => {
+            const src = `data:image/jpeg;base64,${img.b64_json}`;
+            const div = document.createElement('div');
+            div.innerHTML = `<img src="\( {src}" class="w-full rounded-3xl cursor-pointer" onclick="window.open(' \){src}', '_blank')">`;
+            gallery.appendChild(div);
+            saveGeneration('image', src, prompt);
+          });
+          document.getElementById('text-result').classList.remove('hidden');
+        }
+      } catch (e) {
+        debug.innerHTML += '❌ Ошибка: ' + e.message;
       }
     }
 
-    // ИНИЦИАЛИЗАЦИЯ
+    // Остальные функции (generateVideo, editImage и т.д.) оставь как были раньше
+    // (если нужно — скажи, пришлю их тоже)
+
     if (checkAuth()) {
       switchTab(0);
     }
