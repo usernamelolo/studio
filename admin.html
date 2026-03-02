@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ панель</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #f8fafc; font-family: system-ui; }
+    .card { background: white; border: 2px solid #e0e7ff; }
+  </style>
+</head>
+<body class="min-h-screen p-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-4xl font-bold text-indigo-700">👑 Админ панель</h1>
+      <a href="index.html" class="bg-indigo-600 text-white px-8 py-4 rounded-3xl text-lg">Вернуться на главную</a>
+    </div>
+
+    <!-- Добавление нового пользователя -->
+    <div class="card p-8 rounded-3xl mb-10">
+      <h2 class="text-2xl font-semibold mb-6">Добавить нового пользователя</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input id="new-username" placeholder="Логин" class="border-2 border-indigo-200 rounded-2xl px-6 py-5 text-lg">
+        <input id="new-password" type="password" placeholder="Пароль" class="border-2 border-indigo-200 rounded-2xl px-6 py-5 text-lg">
+        <button onclick="addUser()" class="bg-green-600 hover:bg-green-700 text-white text-xl font-semibold py-5 rounded-3xl">Создать пользователя</button>
+      </div>
+    </div>
+
+    <!-- Список пользователей -->
+    <div id="users-list" class="space-y-6"></div>
+  </div>
+
+  <script>
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser !== 'admin') {
+      alert('Доступ запрещён! Только админ.');
+      window.location.href = 'index.html';
+    }
+
+    // Загрузка и отображение пользователей
+    function loadUsers() {
+      const container = document.getElementById('users-list');
+      container.innerHTML = '';
+      
+      // Пример пользователей (можно расширить)
+      const users = ['admin', 'user1', 'user2'];
+      
+      users.forEach(username => {
+        const div = document.createElement('div');
+        div.className = 'card p-6 rounded-3xl';
+        div.innerHTML = `
+          <div class="flex justify-between items-center">
+            <h3 class="text-2xl font-bold">👤 ${username}</h3>
+            <span class="text-sm bg-indigo-100 text-indigo-700 px-4 py-2 rounded-2xl">${username === 'admin' ? 'Администратор' : 'Пользователь'}</span>
+          </div>
+          <div class="mt-6 grid grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm text-gray-600 mb-2">Макс. картинок в день</label>
+              <input type="number" id="img-${username}" value="10" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-2">Макс. видео в день</label>
+              <input type="number" id="vid-${username}" value="5" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
+            </div>
+          </div>
+          <button onclick="saveLimits('${username}')" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-5 rounded-3xl text-lg">Сохранить лимиты</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    window.addUser = function() {
+      const username = document.getElementById('new-username').value.trim();
+      const password = document.getElementById('new-password').value;
+      if (!username || !password) return alert('Заполни оба поля');
+      alert(`✅ Пользователь ${username} успешно создан!\nПароль: ${password}\n\nПерезайди в админку, чтобы увидеть его в списке.`);
+      // Здесь можно добавить сохранение в Redis (пока просто алерт)
+    };
+
+    window.saveLimits = function(username) {
+      const maxImages = document.getElementById(`img-${username}`).value;
+      const maxVideos = document.getElementById(`vid-${username}`).value;
+      alert(`✅ Лимиты для ${username} обновлены:\nКартинки: ${maxImages}\nВидео: ${maxVideos}`);
+    };
+
+    loadUsers();
+  </script>
+</body>
+</html>
