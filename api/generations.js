@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+xport default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -12,10 +12,18 @@ export default async function handler(req, res) {
     const KV_TOKEN = process.env.KV_REST_API_TOKEN;
 
     if (!KV_URL || !KV_TOKEN) {
-      return res.status(500).json({ error: 'KV_REST_API_URL или KV_REST_API_TOKEN не найден в Environment Variables Vercel' });
+      return res.status(500).json({ error: 'KV_REST_API_URL или KV_REST_API_TOKEN не найден в Environment Variables' });
     }
 
-    const { user, action, data } = req.body;
+    let user, action, data;
+
+    if (req.method === 'POST') {
+      ({ user, action, data } = req.body || {});
+    } else {
+      user = req.query.user;
+      action = req.query.action;
+      data = {};
+    }
 
     if (!user) {
       return res.status(400).json({ error: 'user is required' });
@@ -24,7 +32,6 @@ export default async function handler(req, res) {
     const key = `results:${user}`;
 
     if (action === 'save') {
-      // Получаем текущий список
       const getRes = await fetch(`\( {KV_URL}/get/ \){encodeURIComponent(key)}`, {
         headers: { Authorization: `Bearer ${KV_TOKEN}` }
       });
@@ -33,7 +40,6 @@ export default async function handler(req, res) {
 
       list.unshift({ ...data, id: Date.now(), date: new Date().toISOString() });
 
-      // Сохраняем обратно
       await fetch(`\( {KV_URL}/set/ \){encodeURIComponent(key)}`, {
         method: 'POST',
         headers: {
