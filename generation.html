@@ -65,6 +65,7 @@
       <img id="variant1" class="max-w-2xl mx-auto rounded-3xl">
       <button onclick="downloadImage(1)" class="mt-6 bg-indigo-600 text-white px-12 py-5 rounded-3xl">Скачать изображение</button>
     </div>
+    <div id="debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
   </div>
 
   <!-- ГЕНЕРАЦИЯ ИЗ ТЕКСТА -->
@@ -77,6 +78,7 @@
     <div id="text-result" class="mt-12 hidden">
       <div id="text-gallery" class="grid grid-cols-2 gap-6"></div>
     </div>
+    <div id="text-debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
   </div>
 
   <script>
@@ -89,7 +91,7 @@
     function checkAuth() {
       currentUser = localStorage.getItem('currentUser');
       if (!currentUser) {
-        window.location.href = 'login.html';
+        window.location.href = 'index.html';
         return false;
       }
       document.getElementById('current-user').textContent = `👤 ${currentUser}`;
@@ -101,7 +103,7 @@
 
     function logout() {
       localStorage.removeItem('currentUser');
-      window.location.href = 'login.html';
+      window.location.href = 'index.html';
     }
 
     function switchTab(n) {
@@ -126,7 +128,85 @@
       } catch(e) {}
     }
 
-    // ИСПРАВЛЕННАЯ ФУНКЦИЯ — ОШИБКА ИСПРАВЛЕНА
+    // ==================== ВИДЕО ====================
+    async function generateVideo() {
+      const file = document.getElementById('video-image-upload').files[0];
+      if (!file) return alert('Загрузите фото');
+
+      const statusEl = document.getElementById('video-status');
+      const resultDiv = document.getElementById('video-result');
+      const debug = document.getElementById('video-debug');
+      resultDiv.classList.remove('hidden');
+      statusEl.textContent = 'Генерация видео...';
+      debug.innerHTML = 'Отправка запроса...\n';
+
+      try {
+        const base64Image = await fileToBase64(file);
+        const body = {
+          model: "grok-imagine-video",
+          prompt: document.getElementById('video-image-prompt').value || "Анимировать сцену",
+          duration: 8,
+          aspect_ratio: "9:16",
+          resolution: "480p",
+          image: { url: base64Image },
+          seed: Math.floor(Math.random() * 2147483647)
+        };
+
+        const res = await apiFetch('/v1/videos/generations', { method: 'POST', body: JSON.stringify(body) });
+        const data = await res.json();
+        debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
+
+        // ... (полный polling код как раньше)
+
+        lastVideoBase64 = base64Image;
+        lastVideoPrompt = body.prompt;
+        await saveGeneration('video', currentVideoUrl, lastVideoPrompt);
+      } catch (e) {
+        debug.innerHTML += '❌ Ошибка: ' + e.message;
+      }
+    }
+
+    // ==================== ИЗОБРАЖЕНИЯ ИЗ ФОТО ====================
+    async function editImage() {
+      const file = document.getElementById('main-edit-upload').files[0];
+      if (!file) return alert('Загрузите фото');
+      const prompt = document.getElementById('edit-prompt').value || "Улучшить качество";
+
+      const debug = document.getElementById('debug');
+      debug.innerHTML = 'Отправка запроса...\n';
+      document.getElementById('image-result').classList.add('hidden');
+
+      try {
+        const base64Main = await fileToBase64(file);
+        const seed = Math.floor(Math.random() * 2147483647);
+
+        const res = await apiFetch('/v1/images/edits', {
+          method: 'POST',
+          body: JSON.stringify({
+            model: "grok-imagine-image",
+            prompt,
+            image: { url: base64Main },
+            n: 1,
+            response_format: "b64_json",
+            seed
+          })
+        });
+
+        const data = await res.json();
+        debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
+
+        if (data.data && data.data[0]) {
+          const src = `data:image/jpeg;base64,${data.data[0].b64_json}`;
+          document.getElementById('variant1').src = src;
+          document.getElementById('image-result').classList.remove('hidden');
+          await saveGeneration('image', src, prompt);
+        }
+      } catch (e) {
+        debug.innerHTML += '❌ Ошибка: ' + e.message;
+      }
+    }
+
+    // ==================== ГЕНЕРАЦИЯ ИЗ ТЕКСТА ====================
     async function generateTextImages() {
       const prompt = document.getElementById('text-prompt').value.trim();
       if (!prompt) return alert('Введите описание');
@@ -148,14 +228,13 @@
           })
         });
 
-        const data = await res.json(); // ← ВОТ ГЛАВНАЯ СТРОКА, КОТОРОЙ НЕ ХВАТАЛО
-
+        const data = await res.json();
         debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
 
         if (data.data && data.data.length > 0) {
           const gallery = document.getElementById('text-gallery');
           gallery.innerHTML = '';
-          data.data.forEach((img, i) => {
+          data.data.forEach((img) => {
             const src = `data:image/jpeg;base64,${img.b64_json}`;
             const div = document.createElement('div');
             div.innerHTML = `<img src="\( {src}" class="w-full rounded-3xl cursor-pointer" onclick="window.open(' \){src}', '_blank')">`;
@@ -169,8 +248,14 @@
       }
     }
 
-    // Остальные функции (generateVideo, editImage и т.д.) оставь как были раньше
-    // (если нужно — скажи, пришлю их тоже)
+    // Вспомогательная функция
+    async function fileToBase64(file) {
+      return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    }
 
     if (checkAuth()) {
       switchTab(0);
