@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Генератор — Вход</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 to-purple-50 min-h-screen flex items-center justify-center">
+  <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
+    <h1 class="text-4xl font-bold text-center mb-10 text-indigo-700">AI Генератор Контента</h1>
+    <input id="username" placeholder="Имя пользователя" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-5 text-lg mb-4">
+    <input id="password" type="password" placeholder="Пароль" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-5 text-lg mb-6">
+    <button onclick="login()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-6 rounded-3xl">Войти</button>
+  </div>
+  <script>
+    async function login() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const res = await fetch('/api/auth', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username, password}) });
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem('currentUser', username);
+        window.location.href = 'index.html';
+      } else alert('Неверный логин или пароль');
+    }
+  </script>
+</body>
+</html>
