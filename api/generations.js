@@ -1,23 +1,65 @@
-import { Redis } from '@upstash/redis';
-
-const redis = Redis.fromEnv(); // работает с твоими KV_ переменными
-
 export default async function handler(req, res) {
-  const { user, action, data } = req.body || req.query;
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (action === 'save') {
-    const key = `results:${user}`;
-    let list = await redis.get(key) || [];
-    list.unshift({ ...data, id: Date.now(), date: new Date().toISOString() });
-    await redis.set(key, list.slice(0, 300)); // последние 300 записей
-    return res.status(200).json({ success: true });
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  if (action === 'get') {
-    const key = `results:${user}`;
-    const list = await redis.get(key) || [];
-    return res.status(200).json(list);
-  }
+  try {
+    const { user, action, data } = req.body;
 
-  res.status(400).json({ error: 'invalid action' });
+    if (!user) {
+      return res.status(400).json({ error: 'user is required' });
+    }
+
+    const KV_URL = process.env.KV_REST_API_URL;
+    const KV_TOKEN = process.env.KV_REST_API_TOKEN;
+
+    if (!KV_URL || !KV_TOKEN) {
+      return res.status(500).json({ error: 'KV_REST_API_URL или KV_REST_API_TOKEN не найден в Environment Variables' });
+    }
+
+    const key = `results:${user}`;
+
+    if (action === 'save') {
+      // Получаем текущий список
+      const getRes = await fetch(`\( {KV_URL}/get/ \){key}`, {
+        headers: { Authorization: `Bearer ${KV_TOKEN}` }
+      });
+      const getData = await getRes.json();
+      let list = getData.result ? JSON.parse(getData.result) : [];
+
+      list.unshift({ ...data, id: Date.now(), date: new Date().toISOString() });
+
+      // Сохраняем обратно
+      await fetch(`\( {KV_URL}/set/ \){key}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${KV_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ value: JSON.stringify(list.slice(0, 300)) })
+      });
+
+      return res.status(200).json({ success: true });
+    }
+
+    if (action === 'get') {
+      const getRes = await fetch(`\( {KV_URL}/get/ \){key}`, {
+        headers: { Authorization: `Bearer ${KV_TOKEN}` }
+      });
+      const getData = await getRes.json();
+      const list = getData.result ? JSON.parse(getData.result) : [];
+      return res.status(200).json(list);
+    }
+
+    return res.status(400).json({ error: 'invalid action' });
+
+  } catch (error) {
+    console.error('Generations error:', error);
+    return res.status(500).json({ error: error.message });
+  }
 }
