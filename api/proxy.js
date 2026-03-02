@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  // CORS
+  // === CORS ===
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -20,14 +20,20 @@ export default async function handler(req, res) {
     const path = req.url.replace('/api/proxy', '');
     const targetUrl = `https://api.x.ai${path}`;
 
-    const response = await fetch(targetUrl, {
+    // ТЕЛО ОТПРАВЛЯЕМ ТОЛЬКО ДЛЯ POST (GET/HEAD не могут иметь body)
+    const fetchOptions = {
       method: req.method,
       headers: {
         'Authorization': `Bearer ${xaiKey}`,
         'Content-Type': 'application/json',
-      },
-      body: req.body ? JSON.stringify(req.body) : undefined,
-    });
+      }
+    };
+
+    if (req.method === 'POST' && req.body) {
+      fetchOptions.body = JSON.stringify(req.body);
+    }
+
+    const response = await fetch(targetUrl, fetchOptions);
 
     const text = await response.text();
 
