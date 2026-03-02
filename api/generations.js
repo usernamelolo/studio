@@ -11,63 +11,87 @@ export default async function handler(req, res) {
     const KV_URL = process.env.KV_REST_API_URL || process.env.KV_URL;
     const KV_TOKEN = process.env.KV_REST_API_TOKEN;
 
-    // === ДЕБАГ ВЕРСЕЛЬ ЛОГИ ===
+    console.log('=== GENERATIONS DEBUG ===');
     console.log('KV_REST_API_URL is set:', !!KV_URL);
     console.log('KV_REST_API_TOKEN is set:', !!KV_TOKEN);
-    console.log('User from query:', req.query.user);
 
-    if (!KV_URL || !KV_TOKEN) {
-      return res.status(500).json({ 
-        error: 'KV_REST_API_URL или KV_REST_API_TOKEN НЕ НАЙДЕНЫ в Environment Variables Vercel' 
-      });
-    }
+    let user, action, data = {};
 
-    let user, action, data;
-
+    // === РУЧНОЙ ПАРСИНГ ТЕЛА ДЛЯ POST (самый надёжный способ) ===
     if (req.method === 'POST') {
-      ({ user, action, data } = req.body || {});
+      let body = '';
+      for await (const chunk of req.body) {
+        body += chunk;
+      }
+      if (body) {
+        const parsed = JSON.parse(body);
+        user = parsed.user;
+        action = parsed.action;
+        data = parsed.data || {};
+      }
+      console.log('POST body parsed → user:', user, 'action:', action);
     } else {
       user = req.query.user;
       action = req.query.action;
-      data = {};
+      console.log('GET query → user:', user, 'action:', action);
     }
 
     if (!user) {
       return res.status(400).json({ error: 'user is required' });
     }
 
-    const key = 'results:' + user;
+    const key = `results:${user}`;
 
     if (action === 'save') {
-      const getUrl = KV_URL + '/get/' + encodeURIComponent(key);
-      const getRes = await fetch(getUrl, {
-        headers: { Authorization: 'Bearer ' + KV_TOKEN }
-      });
+      const getUrl = `\( {KV_URL}/get/ \){encodeURIComponent(key)}`;
+      const getRes = await fetch(getUrl, { headers: { Authorization: `Bearer ${KV_TOKEN}` } });
       const getData = await getRes.json();
-      let list = getData.result ? JSON.parse(getData.result) : [];
+
+      console.log('KV get result:', getData.result ? 'exists' : 'null');
+
+      let list = [];
+      if (getData.result) {
+        try {
+          list = JSON.parse(getData.result);
+        } catch (e) {
+          console.log('JSON parse error, starting fresh');
+          list = [];
+        }
+      }
+
+      // ЗАЩИТА: всегда массив
+      if (!Array.isArray(list)) list = [];
 
       list.unshift({ ...data, id: Date.now(), date: new Date().toISOString() });
 
-      const setUrl = KV_URL + '/set/' + encodeURIComponent(key);
+      const setUrl = `\( {KV_URL}/set/ \){encodeURIComponent(key)}`;
       await fetch(setUrl, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer ' + KV_TOKEN,
+          Authorization: `Bearer ${KV_TOKEN}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ value: JSON.stringify(list.slice(0, 300)) })
       });
 
+      console.log('✅ Сохранено успешно, элементов:', list.length);
       return res.status(200).json({ success: true });
     }
 
     if (action === 'get') {
-      const getUrl = KV_URL + '/get/' + encodeURIComponent(key);
-      const getRes = await fetch(getUrl, {
-        headers: { Authorization: 'Bearer ' + KV_TOKEN }
-      });
+      const getUrl = `\( {KV_URL}/get/ \){encodeURIComponent(key)}`;
+      const getRes = await fetch(getUrl, { headers: { Authorization: `Bearer ${KV_TOKEN}` } });
       const getData = await getRes.json();
-      const list = getData.result ? JSON.parse(getData.result) : [];
+
+      let list = [];
+      if (getData.result) {
+        try {
+          list = JSON.parse(getData.result);
+        } catch (e) {}
+      }
+      if (!Array.isArray(list)) list = [];
+
+      console.log('✅ Отправлено результатов:', list.length);
       return res.status(200).json(list);
     }
 
