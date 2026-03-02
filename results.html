@@ -7,12 +7,18 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="p-6 bg-gray-50">
-  <h1 class="text-4xl font-bold mb-8">Мои результаты</h1>
-  <div id="results-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  <div class="max-w-6xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-4xl font-bold">Мои результаты</h1>
+      <a href="generation.html" class="bg-indigo-600 text-white px-8 py-4 rounded-3xl text-lg">Вернуться на главную</a>
+    </div>
+
+    <div id="results-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </div>
 
   <script>
     const user = localStorage.getItem('currentUser');
-    const isAdmin = user === 'admin' || user === 'твой_логин';
+    const isAdmin = user === 'nysp';
 
     fetch('/api/generations?action=get&user=' + user)
       .then(r => r.json())
@@ -41,15 +47,14 @@
     window.deleteResult = function(id, btn) {
       if (isAdmin) {
         if (confirm('Полностью удалить генерацию из хранилища?')) {
-          // Здесь можно добавить API-вызов для полного удаления из Redis
           btn.parentElement.parentElement.remove();
-          alert('Генерация удалена полностью');
+          alert('Генерация удалена полностью (админ)');
         }
       } else {
-        if (confirm('удалить')) {
+        if (confirm('Скрыть генерацию только для себя?')) {
           btn.parentElement.parentElement.style.opacity = '0.3';
           btn.parentElement.parentElement.style.pointerEvents = 'none';
-          alert('Генерация удалена');
+          alert('Генерация скрыта для тебя (админ видит её)');
         }
       }
     };
