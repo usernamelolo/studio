@@ -14,7 +14,7 @@
   <div class="max-w-5xl mx-auto">
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-4xl font-bold text-indigo-700">Админ панель</h1>
-      <a href="index.html" class="bg-indigo-600 text-white px-8 py-4 rounded-3xl text-lg">Вернуться на главную</a>
+      <a href="generation.html" class="bg-indigo-600 text-white px-8 py-4 rounded-3xl text-lg">Вернуться на главную</a>
     </div>
 
     <!-- Добавление нового пользователя -->
@@ -23,11 +23,11 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <input id="new-username" placeholder="Логин" class="border-2 border-indigo-200 rounded-2xl px-6 py-5 text-lg">
         <input id="new-password" type="password" placeholder="Пароль" class="border-2 border-indigo-200 rounded-2xl px-6 py-5 text-lg">
-        <button onclick="addUser()" class="bg-green-600 hover:bg-green-700 text-white text-xl font-semibold py-5 rounded-3xl">Создать пользователя</button>
+        <button id="create-btn" class="bg-green-600 hover:bg-green-700 text-white text-xl font-semibold py-5 rounded-3xl">Создать пользователя</button>
       </div>
     </div>
 
-    <!-- Список всех пользователей -->
+    <!-- Список пользователей -->
     <div id="users-list" class="space-y-6"></div>
   </div>
 
@@ -35,7 +35,7 @@
     const currentUser = localStorage.getItem('currentUser');
     if (currentUser !== 'nysp') {
       alert('Доступ запрещён. Только администратор (nysp).');
-      window.location.href = 'index.html';
+      window.location.href = 'generation.html';
       throw new Error('Access denied');
     }
 
@@ -63,16 +63,16 @@
           <div class="mt-6 grid grid-cols-2 gap-6">
             <div>
               <label class="block text-sm text-gray-600 mb-2">Макс. картинок в день</label>
-              <input type="number" id="img-\( {username}" value=" \){data[username].maxImages}" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
+              <input type="number" id="img-${username}" value="${data[username].maxImages}" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
             </div>
             <div>
               <label class="block text-sm text-gray-600 mb-2">Макс. видео в день</label>
-              <input type="number" id="vid-\( {username}" value=" \){data[username].maxVideos}" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
+              <input type="number" id="vid-${username}" value="${data[username].maxVideos}" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
             </div>
           </div>
           <div class="flex gap-4 mt-6">
             <button onclick="saveLimits('${username}')" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-5 rounded-3xl text-lg">Сохранить лимиты</button>
-            \( {username !== 'admin' ? `<button onclick="deleteUser(' \){username}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-5 rounded-3xl text-lg">Удалить пользователя</button>` : ''}
+            ${username !== 'admin' ? `<button onclick="deleteUser('${username}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-5 rounded-3xl text-lg">Удалить пользователя</button>` : ''}
           </div>
         `;
         container.appendChild(div);
@@ -95,7 +95,6 @@
     window.saveLimits = async function(username) {
       const maxImages = parseInt(document.getElementById('img-' + username).value) || 10;
       const maxVideos = parseInt(document.getElementById('vid-' + username).value) || 5;
-      // Здесь можно добавить обновление лимитов через API (пока алерт)
       alert('Лимиты для ' + username + ' обновлены');
       loadUsers();
     };
@@ -111,6 +110,8 @@
         }
       }
     };
+
+    document.getElementById('create-btn').addEventListener('click', window.addUser);
 
     loadUsers();
   </script>
