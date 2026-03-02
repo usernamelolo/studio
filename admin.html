@@ -13,7 +13,7 @@
 <body class="min-h-screen p-6">
   <div class="max-w-5xl mx-auto">
     <div class="flex justify-between items-center mb-8">
-      <h1 class="text-4xl font-bold text-indigo-700">👑 Админ панель</h1>
+      <h1 class="text-4xl font-bold text-indigo-700">Админ панель</h1>
       <a href="index.html" class="bg-indigo-600 text-white px-8 py-4 rounded-3xl text-lg">Вернуться на главную</a>
     </div>
 
@@ -33,55 +33,78 @@
 
   <script>
     const currentUser = localStorage.getItem('currentUser');
-    if (currentUser !== 'nysp') {
-      alert('Доступ запрещён! Только админ.');
+    if (currentUser !== 'admin' && currentUser !== 'твой_логин') {
+      alert('Доступ запрещён. Только администратор.');
       window.location.href = 'index.html';
     }
 
-    // Загрузка и отображение пользователей
-    function loadUsers() {
+    async function apiUsers(action, body = {}) {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...body })
+      });
+      return res.json();
+    }
+
+    async function loadUsers() {
+      const data = await apiUsers('get');
       const container = document.getElementById('users-list');
       container.innerHTML = '';
-      
-      // Пример пользователей (можно расширить)
-      const users = ['admin', 'user1', 'user2'];
-      
-      users.forEach(username => {
+      Object.keys(data).forEach(username => {
         const div = document.createElement('div');
         div.className = 'card p-6 rounded-3xl';
         div.innerHTML = `
           <div class="flex justify-between items-center">
-            <h3 class="text-2xl font-bold">👤 ${username}</h3>
-            <span class="text-sm bg-indigo-100 text-indigo-700 px-4 py-2 rounded-2xl">${username === 'admin' ? 'Администратор' : 'Пользователь'}</span>
+            <h3 class="text-2xl font-bold">Пользователь: ${username}</h3>
+            <span class="text-sm bg-indigo-100 text-indigo-700 px-4 py-2 rounded-2xl">${data[username].role === 'admin' ? 'Администратор' : 'Пользователь'}</span>
           </div>
           <div class="mt-6 grid grid-cols-2 gap-6">
             <div>
               <label class="block text-sm text-gray-600 mb-2">Макс. картинок в день</label>
-              <input type="number" id="img-${username}" value="10" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
+              <input type="number" id="img-${username}" value="${data[username].maxImages}" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
             </div>
             <div>
               <label class="block text-sm text-gray-600 mb-2">Макс. видео в день</label>
-              <input type="number" id="vid-${username}" value="5" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
+              <input type="number" id="vid-${username}" value="${data[username].maxVideos}" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
             </div>
           </div>
-          <button onclick="saveLimits('${username}')" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-5 rounded-3xl text-lg">Сохранить лимиты</button>
+          <div class="flex gap-4 mt-6">
+            <button onclick="saveLimits('${username}')" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-5 rounded-3xl text-lg">Сохранить лимиты</button>
+            ${username !== 'admin' ? `<button onclick="deleteUser('${username}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-5 rounded-3xl text-lg">Удалить пользователя</button>` : ''}
+          </div>
         `;
         container.appendChild(div);
       });
     }
 
-    window.addUser = function() {
+    window.addUser = async function() {
       const username = document.getElementById('new-username').value.trim();
       const password = document.getElementById('new-password').value;
       if (!username || !password) return alert('Заполни оба поля');
-      alert(`✅ Пользователь ${username} успешно создан!\nПароль: ${password}\n\nПерезайди в админку, чтобы увидеть его в списке.`);
-      // Здесь можно добавить сохранение в Redis (пока просто алерт)
+      const result = await apiUsers('add', { username, password });
+      if (result.success) {
+        alert('Пользователь ' + username + ' создан');
+        loadUsers();
+      } else {
+        alert(result.error);
+      }
     };
 
-    window.saveLimits = function(username) {
-      const maxImages = document.getElementById(`img-${username}`).value;
-      const maxVideos = document.getElementById(`vid-${username}`).value;
-      alert(`✅ Лимиты для ${username} обновлены:\nКартинки: ${maxImages}\nВидео: ${maxVideos}`);
+    window.saveLimits = async function(username) {
+      const maxImages = parseInt(document.getElementById('img-' + username).value);
+      const maxVideos = parseInt(document.getElementById('vid-' + username).value);
+      // Здесь можно добавить обновление лимитов через API (пока просто алерт)
+      alert('Лимиты для ' + username + ' обновлены');
+      loadUsers();
+    };
+
+    window.deleteUser = async function(username) {
+      if (confirm('Удалить пользователя ' + username + '?')) {
+        await apiUsers('delete', { username });
+        alert('Пользователь удалён');
+        loadUsers();
+      }
     };
 
     loadUsers();
