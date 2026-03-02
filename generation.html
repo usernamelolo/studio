@@ -33,7 +33,7 @@
     <a href="admin.html" id="admin-tab" class="w-full max-w-xs px-10 py-5 text-2xl rounded-3xl border-2 border-indigo-200 text-center hover:bg-indigo-50 hidden">👑 Админ панель</a>
   </div>
 
-  <!-- ВИДЕО ИЗ ФОТО -->
+  <!-- ВИДЕО ИЗ ФОТО (с кнопкой отмены и статусом) -->
   <div id="section-video" class="card p-6 mx-4 rounded-3xl">
     <h2 class="text-3xl font-semibold mb-6 text-indigo-700">🎥 Видео из загруженного фото</h2>
     <div class="max-w-2xl mx-auto">
@@ -43,11 +43,14 @@
       <div class="mt-6 text-center text-indigo-600 font-medium" id="video-limit-info"></div>
       <button onclick="generateVideo()" class="mt-10 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Создать видео</button>
     </div>
+
     <div id="video-result" class="mt-12 hidden">
+      <div id="video-status" class="text-center text-xl mb-6 text-gray-700">Генерация видео...</div>
       <video id="video-player" controls class="w-full max-w-4xl mx-auto rounded-3xl"></video>
       <div class="flex gap-4 mt-6">
         <button onclick="downloadVideo()" class="flex-1 bg-indigo-600 text-white py-5 rounded-3xl">Скачать</button>
         <button onclick="extendVideo()" id="extend-btn" class="flex-1 bg-green-600 text-white py-5 rounded-3xl">Продлить видео (+8 сек)</button>
+        <button onclick="stopVideoGeneration()" id="stop-btn" class="flex-1 bg-red-600 text-white py-5 rounded-3xl">Отмена генерации</button>
       </div>
     </div>
     <div id="video-debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
@@ -128,7 +131,15 @@
       } catch(e) {}
     }
 
-    // ==================== ВИДЕО ====================
+    async function fileToBase64(file) {
+      return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // ==================== ВИДЕО С КНОПКОЙ ОТМЕНЫ ====================
     async function generateVideo() {
       const file = document.getElementById('video-image-upload').files[0];
       if (!file) return alert('Загрузите фото');
@@ -136,9 +147,14 @@
       const statusEl = document.getElementById('video-status');
       const resultDiv = document.getElementById('video-result');
       const debug = document.getElementById('video-debug');
+      const stopBtn = document.getElementById('stop-btn');
+
       resultDiv.classList.remove('hidden');
-      statusEl.textContent = 'Генерация видео...';
+      if (statusEl) statusEl.textContent = 'Генерация видео...';
+      if (stopBtn) stopBtn.style.display = 'block';
       debug.innerHTML = 'Отправка запроса...\n';
+
+      if (videoInterval) clearInterval(videoInterval);
 
       try {
         const base64Image = await fileToBase64(file);
@@ -156,14 +172,61 @@
         const data = await res.json();
         debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
 
-        // ... (полный polling код как раньше)
+        const requestId = data.request_id || data.id;
+        let attempts = 0;
 
-        lastVideoBase64 = base64Image;
-        lastVideoPrompt = body.prompt;
-        await saveGeneration('video', currentVideoUrl, lastVideoPrompt);
+        videoInterval = setInterval(async () => {
+          attempts++;
+          const statusRes = await apiFetch(`/v1/videos/${requestId}`);
+          const statusData = await statusRes.json();
+          debug.innerHTML += `Polling #${attempts}: ${JSON.stringify(statusData)}\n`;
+
+          let videoUrl = statusData.video?.url || statusData.url;
+          if (videoUrl && videoUrl.includes('vidgen.x.ai')) {
+            clearInterval(videoInterval);
+            videoInterval = null;
+            const player = document.getElementById('video-player');
+            player.src = videoUrl;
+            player.load();
+            if (statusEl) statusEl.textContent = 'Готово!';
+            await saveGeneration('video', videoUrl, body.prompt);
+            return;
+          }
+
+          if (attempts >= 40) {
+            clearInterval(videoInterval);
+            videoInterval = null;
+            if (statusEl) statusEl.textContent = 'Превышено время ожидания';
+          }
+        }, 3000);
       } catch (e) {
+        if (statusEl) statusEl.textContent = 'Ошибка генерации';
         debug.innerHTML += '❌ Ошибка: ' + e.message;
       }
+    }
+
+    function stopVideoGeneration() {
+      if (videoInterval) clearInterval(videoInterval);
+      videoInterval = null;
+      const statusEl = document.getElementById('video-status');
+      if (statusEl) statusEl.textContent = 'Генерация остановлена';
+      const debug = document.getElementById('video-debug');
+      if (debug) debug.innerHTML += '🛑 Генерация остановлена пользователем\n';
+    }
+
+    function downloadVideo() {
+      const player = document.getElementById('video-player');
+      if (player.src) {
+        const a = document.createElement('a');
+        a.href = player.src;
+        a.download = `video-${Date.now()}.mp4`;
+        a.click();
+      }
+    }
+
+    async function extendVideo() {
+      // ... (можно добавить позже, если нужно)
+      alert('Функция продления видео в разработке');
     }
 
     // ==================== ИЗОБРАЖЕНИЯ ИЗ ФОТО ====================
@@ -246,15 +309,6 @@
       } catch (e) {
         debug.innerHTML += '❌ Ошибка: ' + e.message;
       }
-    }
-
-    // Вспомогательная функция
-    async function fileToBase64(file) {
-      return new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-      });
     }
 
     if (checkAuth()) {
