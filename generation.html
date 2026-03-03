@@ -109,36 +109,45 @@
     async function checkAuth() {
       authToken = localStorage.getItem('authToken');
       if (!authToken) {
+        console.log('No authToken in localStorage, redirecting to index.html');
         window.location.href = 'index.html';
         return false;
       }
 
       // Validate token and get user info
-      const userRes = await fetch('/api/auth?validate=true', {
-        headers: { Authorization: `Bearer ${authToken}` }
-      });
-      if (!userRes.ok) {
+      try {
+        const userRes = await fetch('/api/auth?validate=true', {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        const data = await userRes.json();
+        if (!userRes.ok) {
+          console.error('Token validation failed:', data.error || 'Unknown error');
+          localStorage.removeItem('authToken');
+          window.location.href = 'index.html';
+          return false;
+        }
+        currentUser = data.username;
+        isAdmin = data.role === 'admin';
+        userLimits = data.limits;
+
+        document.getElementById('current-user').textContent = `👤 ${currentUser}`;
+
+        if (isAdmin) {
+          document.getElementById('admin-tab').classList.remove('hidden');
+          document.getElementById('duration-section').style.display = 'block';
+        }
+
+        document.getElementById('video-limit-info').textContent = `Остаток видео на сегодня: загрузка...`;
+        document.getElementById('image-limit-info').textContent = `Остаток изображений на сегодня: загрузка...`;
+        document.getElementById('text-limit-info').textContent = `Остаток изображений на сегодня: загрузка...`;
+        updateLimitsInfo();
+        return true;
+      } catch (error) {
+        console.error('Error in checkAuth fetch:', error);
         localStorage.removeItem('authToken');
         window.location.href = 'index.html';
         return false;
       }
-      const userData = await userRes.json();
-      currentUser = userData.username;
-      isAdmin = userData.role === 'admin';
-      userLimits = userData.limits;
-
-      document.getElementById('current-user').textContent = `👤 ${currentUser}`;
-
-      if (isAdmin) {
-        document.getElementById('admin-tab').classList.remove('hidden');
-        document.getElementById('duration-section').style.display = 'block';
-      }
-
-      document.getElementById('video-limit-info').textContent = `Остаток видео на сегодня: загрузка...`;
-      document.getElementById('image-limit-info').textContent = `Остаток изображений на сегодня: загрузка...`;
-      document.getElementById('text-limit-info').textContent = `Остаток изображений на сегодня: загрузка...`;
-      updateLimitsInfo();
-      return true;
     }
 
     async function updateLimitsInfo() {
@@ -418,9 +427,9 @@
       }
     }
 
-    if (checkAuth()) {
-      switchTab(0);
-    }
+    checkAuth().then(success => {
+      if (success) switchTab(0);
+    });
   </script>
 </body>
 </html>
