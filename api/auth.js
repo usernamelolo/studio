@@ -22,6 +22,7 @@ export default async function handler(req, res) {
     const adminUser = process.env.SITE_USERNAME || 'nysp';
     const adminPass = process.env.SITE_PASSWORD;
     let usersStr = await redis.get(keyUsers);
+    console.log(`Type of usersStr: ${typeof usersStr}`);
     let users = usersStr ? JSON.parse(usersStr) : {};
     if (adminPass && (!users[adminUser] || users[adminUser].password !== adminPass)) {
       console.log(`Initializing or updating admin ${adminUser}`);
@@ -53,6 +54,7 @@ export default async function handler(req, res) {
       if (token) {
         const tokenKey = `token:${token}`;
         const userDataStr = await redis.get(tokenKey);
+        console.log(`Type of userDataStr: ${typeof userDataStr}`);
         const userData = userDataStr ? JSON.parse(userDataStr) : null;
         if (userData) {
           console.log(`Validate success for token ${token}, user: ${userData.username}`);
