@@ -18,34 +18,38 @@ export default async function handler(req, res) {
 
     const keyUsers = 'all_users';
 
-    // Инициализация админа из env, если не существует или пароль не задан
+    // Force update admin from env every request to ensure sync
     const adminUser = process.env.SITE_USERNAME || 'nysp';
-    let adminPass = process.env.SITE_PASSWORD;
-    if (!adminPass) {
-      console.warn('SITE_PASSWORD not set, using fallback password for testing');
-      adminPass = 'fallback_password'; // Замените на временный пароль для теста
-    }
+    const adminPass = process.env.SITE_PASSWORD;
     let usersStr = await redis.get(keyUsers);
     console.log(`Type of usersStr: ${typeof usersStr}`);
-    let users = usersStr ? JSON.parse(usersStr) : {};
-    if (adminPass && (!users[adminUser] || users[adminUser].password !== adminPass)) {
-      console.log(`Initializing or updating admin ${adminUser}`);
+    let users = (typeof usersStr === 'string') ? JSON.parse(usersStr) : (usersStr || {});
+    if (adminPass) {
+      console.log(`Force updating admin ${adminUser} from env`);
       users[adminUser] = { password: adminPass, role: 'admin', maxImages: 999, maxVideos: 999 };
       await redis.set(keyUsers, JSON.stringify(users));
+    } else {
+      console.warn('No SITE_PASSWORD set');
     }
 
     if (req.method === 'POST') {
       if (action === 'login') {
         console.log(`Login attempt for ${username}`);
-        if (users[username] && users[username].password === password) {
-          const authToken = `\( {username}_ \){Date.now()}`;
-          const tokenKey = `token:${authToken}`;
-          console.log(`Setting tokenKey: ${tokenKey}`);
-          await redis.set(tokenKey, JSON.stringify({ username, role: users[username].role, limits: { maxImages: users[username].maxImages, maxVideos: users[username].maxVideos } }), { ex: 3600 });
-          console.log(`Login success for ${username}, token: ${authToken}`);
-          return res.status(200).json({ success: true, authToken });
+        if (users[username]) {
+          console.log(`Stored password length for ${username}: ${users[username].password.length}`);
+          console.log(`Provided password length: ${password ? password.length : 'no password'}`);
+          if (users[username].password === password) {
+            const authToken = `\( {username}_ \){Date.now()}`;
+            const tokenKey = `token:${authToken}`;
+            await redis.set(tokenKey, JSON.stringify({ username, role: users[username].role, limits: { maxImages: users[username].maxImages, maxVideos: users[username].maxVideos } }), { ex: 3600 });
+            console.log(`Login success for ${username}, token: ${authToken}`);
+            return res.status(200).json({ success: true, authToken });
+          } else {
+            console.log(`Password mismatch for ${username}`);
+          }
+        } else {
+          console.log(`No user found for ${username}`);
         }
-        console.log(`Invalid credentials for ${username}`);
         return res.status(401).json({ success: false, error: 'Invalid credentials' });
       } else if (action === 'logout') {
         if (token) {
@@ -58,10 +62,9 @@ export default async function handler(req, res) {
     } else if (req.method === 'GET' && req.query.validate) {
       if (token) {
         const tokenKey = `token:${token}`;
-        console.log(`Validating tokenKey: ${tokenKey}`);
         let userDataStr = await redis.get(tokenKey);
         console.log(`Type of userDataStr: ${typeof userDataStr}`);
-        const userData = userDataStr ? JSON.parse(userDataStr) : null;
+        const userData = (typeof userDataStr === 'string') ? JSON.parse(userDataStr) : (userDataStr || null);
         if (userData) {
           console.log(`Validate success for token ${token}, user: ${userData.username}`);
           return res.status(200).json(userData);
