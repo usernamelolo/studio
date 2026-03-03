@@ -17,6 +17,7 @@ export default async function handler(req, res) {
     const token = authHeader && authHeader.split(' ')[1];
     const tokenKey = `token:${token}`;
     const userDataStr = await redis.get(tokenKey);
+    console.log(`Type of userDataStr in generations: ${typeof userDataStr}`);
     const userData = userDataStr ? JSON.parse(userDataStr) : null;
     if (!userData) return res.status(401).json({ error: 'Invalid token' });
 
@@ -27,6 +28,7 @@ export default async function handler(req, res) {
 
     if (action === 'save') {
       let generationsStr = await redis.get(key);
+      console.log(`Type of generationsStr: ${typeof generationsStr}`);
       let generations = generationsStr ? JSON.parse(generationsStr) : [];
       generations.push({ ...data, date: new Date().toISOString() });
       await redis.set(key, JSON.stringify(generations));
