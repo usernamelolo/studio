@@ -17,7 +17,8 @@ export default async function handler(req, res) {
     const token = authHeader && authHeader.split(' ')[1];
     const tokenKey = `token:${token}`;
     const userDataStr = await redis.get(tokenKey);
-    if (!userDataStr || JSON.parse(userDataStr).role !== 'admin') {
+    const userData = userDataStr ? JSON.parse(userDataStr) : null;
+    if (!userData || userData.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -25,13 +26,14 @@ export default async function handler(req, res) {
 
     const key = 'all_users';
 
+    let usersStr = await redis.get(key);
+    let users = usersStr ? JSON.parse(usersStr) : {};
+
     if (action === 'get') {
-      let users = await redis.get(key) || {};
       return res.status(200).json(users);
     }
 
     if (action === 'get_limits') {
-      let users = await redis.get(key);
       if (users && users[username]) {
         return res.status(200).json({ maxImages: users[username].maxImages, maxVideos: users[username].maxVideos });
       }
@@ -39,28 +41,25 @@ export default async function handler(req, res) {
     }
 
     if (action === 'add') {
-      let users = await redis.get(key) || {};
       if (users[username]) return res.status(400).json({ error: 'Пользователь уже существует' });
 
       users[username] = { password, role: 'user', maxImages: parseInt(maxImages), maxVideos: parseInt(maxVideos) };
-      await redis.set(key, users);
+      await redis.set(key, JSON.stringify(users));
       return res.status(200).json({ success: true });
     }
 
     if (action === 'update') {
-      let users = await redis.get(key) || {};
       if (!users[username]) return res.status(404).json({ error: 'Пользователь не найден' });
       users[username].maxImages = parseInt(maxImages);
       users[username].maxVideos = parseInt(maxVideos);
-      await redis.set(key, users);
+      await redis.set(key, JSON.stringify(users));
       return res.status(200).json({ success: true });
     }
 
     if (action === 'delete') {
-      let users = await redis.get(key) || {};
       if (username === process.env.SITE_USERNAME) return res.status(400).json({ error: 'Админа удалить нельзя' });
       delete users[username];
-      await redis.set(key, users);
+      await redis.set(key, JSON.stringify(users));
       return res.status(200).json({ success: true });
     }
 
