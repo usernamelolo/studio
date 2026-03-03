@@ -18,23 +18,26 @@ export default async function handler(req, res) {
 
     const keyUsers = 'all_users';
 
-    // Инициализация админа из env, если не существует
+    // Инициализация админа из env, если не существует или пароль не задан
     const adminUser = process.env.SITE_USERNAME || 'nysp';
     const adminPass = process.env.SITE_PASSWORD;
     let users = await redis.get(keyUsers) || {};
-    if (adminPass && !users[adminUser]) {
+    if (adminPass && (!users[adminUser] || users[adminUser].password !== adminPass)) {
+      console.log(`Initializing or updating admin ${adminUser}`);
       users[adminUser] = { password: adminPass, role: 'admin', maxImages: 999, maxVideos: 999 };
       await redis.set(keyUsers, users);
     }
 
     if (req.method === 'POST') {
       if (action === 'login') {
+        console.log(`Login attempt for ${username}`);
         if (users[username] && users[username].password === password) {
-          const authToken = `\( {username}_ \){Date.now()}`;
+          const authToken = `${username}_${Date.now()}`;
           const tokenKey = `token:${authToken}`;
-          await redis.set(tokenKey, JSON.stringify({ username, role: users[username].role, limits: { maxImages: users[username].maxImages, maxVideos: users[username].maxVideos } }), 'EX', 3600);
+          await redis.set(tokenKey, JSON.stringify({ username, role: users[username].role, limits: { maxImages: users[username].maxImages, maxVideos: users[username].maxVideos } }), { ex: 3600 });
           return res.status(200).json({ success: true, authToken });
         }
+        console.log(`Invalid credentials for ${username}`);
         return res.status(401).json({ success: false, error: 'Invalid credentials' });
       } else if (action === 'logout') {
         if (token) {
