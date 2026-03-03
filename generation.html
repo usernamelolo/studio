@@ -106,26 +106,7 @@
     let userLimits = { maxImages: 10, maxVideos: 5 };
     let isAdmin = false;
 
-    async function checkAuth() {
-      authToken = localStorage.getItem('authToken');
-      if (!authToken) {
-        console.log('No authToken in localStorage, redirecting to index.html');
-        window.location.href = 'index.html';
-        return false;
-      }
-
-      // Validate token and get user info
-      try {
-        const userRes = await fetch('/api/auth?validate=true', {
-          headers: { Authorization: `Bearer ${authToken}` }
-        });
-        const data = await userRes.json();
-        if (!userRes.ok) {
-          console.error('Token validation failed:', data.error || 'Unknown error');
-          localStorage.removeItem('authToken');
-          window.location.href = 'index.html';
-          return false;
-        }
+  
         currentUser = data.username;
         isAdmin = data.role === 'admin';
         userLimits = data.limits;
