@@ -16,9 +16,9 @@ export default async function handler(req, res) {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
     const tokenKey = `token:${token}`;
-    const userDataStr = await redis.get(tokenKey);
+    let userDataStr = await redis.get(tokenKey);
     console.log(`Type of userDataStr in generations: ${typeof userDataStr}`);
-    const userData = userDataStr ? JSON.parse(userDataStr) : null;
+    const userData = (typeof userDataStr === 'string') ? JSON.parse(userDataStr) : (userDataStr || null);
     if (!userData) return res.status(401).json({ error: 'Invalid token' });
 
     const { username } = userData;
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     if (action === 'save') {
       let generationsStr = await redis.get(key);
       console.log(`Type of generationsStr: ${typeof generationsStr}`);
-      let generations = generationsStr ? JSON.parse(generationsStr) : [];
+      let generations = (typeof generationsStr === 'string') ? JSON.parse(generationsStr) : (generationsStr || []);
       generations.push({ ...data, date: new Date().toISOString() });
       await redis.set(key, JSON.stringify(generations));
       return res.status(200).json({ success: true });
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 
     if (action === 'get') {
       let generationsStr = await redis.get(key);
-      const generations = generationsStr ? JSON.parse(generationsStr) : [];
+      const generations = (typeof generationsStr === 'string') ? JSON.parse(generationsStr) : (generationsStr || []);
       return res.status(200).json(generations);
     }
 
