@@ -17,10 +17,14 @@
     async function login() {
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
-      const res = await fetch('/api/auth', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username, password}) });
+      const res = await fetch('/api/auth', { 
+        method: 'POST', 
+        headers: {'Content-Type': 'application/json'}, 
+        body: JSON.stringify({action: 'login', username, password}) 
+      });
       const data = await res.json();
       if (data.success) {
-        localStorage.setItem('currentUser', username);
+        localStorage.setItem('authToken', data.authToken);
         window.location.href = 'generation.html';
       } else alert('Неверный логин или пароль');
     }
