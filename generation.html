@@ -2,190 +2,334 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AI Генератор Контента</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: system-ui, sans-serif; }
-    .tab { transition: all 0.3s; }
+    body { background: #f8fafc; font-family: system-ui; }
+    .header { background: linear-gradient(90deg, #4f46e5, #7c3aed); }
+    .tab-active { background: #4f46e5; color: white; font-weight: 700; }
+    .card { background: white; border: 2px solid #e0e7ff; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05); }
+    video, img { border-radius: 16px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
   </style>
 </head>
-<body class="bg-zinc-950 text-zinc-200 min-h-screen">
-  <div class="max-w-5xl mx-auto p-4">
-    <!-- ШАПКА С КНОПКОЙ "МОИ РЕЗУЛЬТАТЫ" -->
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-4xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">AI Генератор</h1>
-      <div class="flex items-center gap-4">
-        <span id="username-display" class="text-lg font-medium"></span>
-        <a href="results.html" class="bg-zinc-800 hover:bg-zinc-700 px-6 py-3 rounded-2xl flex items-center gap-2 text-lg">
-          📊 Мои результаты
-        </a>
-        <button onclick="logout()" class="bg-red-600 hover:bg-red-500 px-5 py-3 rounded-2xl">Выйти</button>
-      </div>
-    </div>
+<body class="text-gray-900 min-h-screen pb-20">
 
-    <!-- ТАБЫ -->
-    <div class="flex flex-col gap-2 mb-8">
-      <button onclick="switchTab(0)" class="tab px-6 py-4 rounded-3xl text-left text-xl font-medium bg-zinc-900 hover:bg-zinc-800 flex items-center gap-4">🎥 Видео из фото</button>
-      <button onclick="switchTab(1)" class="tab px-6 py-4 rounded-3xl text-left text-xl font-medium bg-zinc-900 hover:bg-zinc-800 flex items-center gap-4">🖼️ Картинки из фото</button>
-      <button onclick="switchTab(2)" class="tab px-6 py-4 rounded-3xl text-left text-xl font-medium bg-zinc-900 hover:bg-zinc-800 flex items-center gap-4">📝 Картинки из текста</button>
-    </div>
-
-    <!-- ТАБ 0: ВИДЕО -->
-    <div id="tab-0" class="tab-content">
-      <div class="bg-zinc-900 rounded-3xl p-8">
-        <input type="file" id="video-file" accept="image/*" class="block w-full text-lg mb-6">
-        <textarea id="video-prompt" rows="3" class="w-full bg-zinc-800 rounded-2xl p-6 text-lg" placeholder="Опиши видео..."></textarea>
-        <div id="video-options" class="mt-6 hidden">
-          <label class="block text-sm mb-2">Длительность (сек)</label>
-          <select id="duration" class="bg-zinc-800 rounded-2xl p-4 w-full text-lg">
-            <option value="8">8 секунд</option>
-            <option value="10">10 секунд</option>
-            <option value="15">15 секунд</option>
-          </select>
-        </div>
-        <button onclick="generateVideo()" class="mt-8 w-full bg-violet-600 hover:bg-violet-500 py-6 rounded-3xl text-2xl font-medium">Сгенерировать видео</button>
-        <div id="video-result" class="mt-12 hidden">
-          <div id="video-status" class="text-center text-xl mb-6">Генерация...</div>
-          <video id="video-player" controls class="w-full rounded-3xl"></video>
-          <div class="flex gap-4 mt-6">
-            <a id="video-download" download class="flex-1 bg-green-600 py-5 rounded-3xl text-center">Скачать</a>
-            <button onclick="stopVideoGeneration()" class="flex-1 bg-red-600 py-5 rounded-3xl">Отмена</button>
-          </div>
-        </div>
-        <pre id="video-debug" class="mt-8 text-xs bg-black p-4 rounded-2xl overflow-auto max-h-48"></pre>
-      </div>
-    </div>
-
-    <!-- ТАБ 1: КАРТИНКИ ИЗ ФОТО -->
-    <div id="tab-1" class="tab-content hidden">
-      <div class="bg-zinc-900 rounded-3xl p-8">
-        <input type="file" id="edit-file" accept="image/*" class="block w-full text-lg mb-6">
-        <textarea id="edit-prompt" rows="3" class="w-full bg-zinc-800 rounded-2xl p-6 text-lg" placeholder="Что изменить..."></textarea>
-        <button onclick="editImage()" class="mt-8 w-full bg-violet-600 hover:bg-violet-500 py-6 rounded-3xl text-2xl font-medium">Сгенерировать 1 картинку</button>
-        <div id="edit-result" class="mt-12 hidden">
-          <img id="edit-image" class="w-full rounded-3xl">
-          <a id="edit-download" download class="block mt-6 text-center bg-green-600 py-5 rounded-3xl">Скачать</a>
-        </div>
-        <pre id="edit-debug" class="mt-8 text-xs bg-black p-4 rounded-2xl overflow-auto max-h-48"></pre>
-      </div>
-    </div>
-
-    <!-- ТАБ 2: КАРТИНКИ ИЗ ТЕКСТА -->
-    <div id="tab-2" class="tab-content hidden">
-      <div class="bg-zinc-900 rounded-3xl p-8">
-        <textarea id="text-prompt" rows="4" class="w-full bg-zinc-800 rounded-2xl p-6 text-lg" placeholder="Опиши картинку..."></textarea>
-        <button onclick="generateTextImages()" class="mt-8 w-full bg-violet-600 hover:bg-violet-500 py-6 rounded-3xl text-2xl font-medium">Сгенерировать 1 картинку</button>
-        <pre id="text-debug" class="mt-8 text-xs bg-black p-4 rounded-2xl overflow-auto max-h-48"></pre>
-      </div>
+  <!-- HEADER -->
+  <div class="header text-white py-8 px-6 flex justify-between items-center">
+    <h1 class="text-3xl font-bold tracking-tight">AI Генератор Контента</h1>
+    <div class="flex items-center gap-4">
+      <span id="current-user" class="bg-white/20 px-6 py-3 rounded-2xl text-lg"></span>
+      <button onclick="logout()" class="bg-white/20 hover:bg-white/30 px-8 py-4 rounded-2xl text-lg transition">Выйти</button>
     </div>
   </div>
 
-  <script>
-    const currentUser = localStorage.getItem('currentUser');
-    if (!currentUser) window.location.href = 'index.html';
-    document.getElementById('username-display').textContent = currentUser;
+  <!-- ВЕРТИКАЛЬНЫЕ ВКЛАДКИ -->
+  <div class="flex flex-col gap-3 items-center mb-10 px-4">
+    <button onclick="switchTab(0)" id="tab0" class="tab-active w-full max-w-xs px-10 py-5 text-2xl rounded-3xl">🎥 Видео из фото</button>
+    <button onclick="switchTab(1)" id="tab1" class="w-full max-w-xs px-10 py-5 text-2xl rounded-3xl border-2 border-indigo-200">🖼️ Изображения из фото</button>
+    <button onclick="switchTab(2)" id="tab2" class="w-full max-w-xs px-10 py-5 text-2xl rounded-3xl border-2 border-indigo-200">📝 Генерация из текста</button>
+    <a href="results.html" class="w-full max-w-xs px-10 py-5 text-2xl rounded-3xl border-2 border-indigo-200 text-center hover:bg-indigo-50">📜 Мои результаты</a>
+    <a href="admin.html" id="admin-tab" class="w-full max-w-xs px-10 py-5 text-2xl rounded-3xl border-2 border-indigo-200 text-center hover:bg-indigo-50 hidden">👑 Админ панель</a>
+  </div>
 
-    function logout() { localStorage.removeItem('currentUser'); window.location.href = 'index.html'; }
-    function switchTab(n) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.getElementById('tab-' + n).classList.remove('hidden');
+  <!-- ВИДЕО ИЗ ФОТО -->
+  <div id="section-video" class="card p-6 mx-4 rounded-3xl">
+    <h2 class="text-3xl font-semibold mb-6 text-indigo-700">🎥 Видео из загруженного фото</h2>
+    <div class="max-w-2xl mx-auto">
+      <input type="file" id="video-image-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-6 text-center cursor-pointer mb-6">
+      <textarea id="video-image-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите желаемую анимацию..."></textarea>
+      
+      <!-- Выбор длительности (только для nysp) -->
+      <div class="mt-6">
+        <label class="block text-sm mb-2 text-gray-600">Длительность видео</label>
+        <select id="duration" class="w-full border border-indigo-200 rounded-xl p-3">
+          <option value="8" selected>8 секунд</option>
+          <option value="10">10 секунд</option>
+          <option value="15">15 секунд</option>
+        </select>
+      </div>
+
+      <div class="mt-6 text-center text-indigo-600 font-medium" id="video-limit-info"></div>
+      <button onclick="generateVideo()" class="mt-10 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Создать видео</button>
+    </div>
+
+    <div id="video-result" class="mt-12 hidden">
+      <div id="video-status" class="text-center text-xl mb-6 text-gray-700">Генерация видео...</div>
+      <video id="video-player" controls class="w-full max-w-4xl mx-auto rounded-3xl"></video>
+      <div class="flex gap-4 mt-6">
+        <button onclick="downloadVideo()" class="flex-1 bg-indigo-600 text-white py-5 rounded-3xl">Скачать</button>
+        <button onclick="extendVideo()" id="extend-btn" class="flex-1 bg-green-600 text-white py-5 rounded-3xl">Продлить видео (+8 сек)</button>
+        <button onclick="stopVideoGeneration()" id="stop-btn" class="flex-1 bg-red-600 text-white py-5 rounded-3xl">Отмена генерации</button>
+      </div>
+    </div>
+    <div id="video-debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
+  </div>
+
+  <!-- ИЗОБРАЖЕНИЯ ИЗ ФОТО -->
+  <div id="section-image" class="card p-6 mx-4 rounded-3xl hidden">
+    <h2 class="text-3xl font-semibold mb-6 text-indigo-700">🖼️ Изображения из загруженного фото</h2>
+    <div class="max-w-2xl mx-auto">
+      <input type="file" id="main-edit-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-6 text-center cursor-pointer mb-6">
+      <textarea id="edit-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите желаемые изменения..."></textarea>
+      <button onclick="editImage()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Сгенерировать 1 изображение</button>
+    </div>
+    <div id="image-result" class="mt-12 hidden text-center">
+      <img id="variant1" class="max-w-2xl mx-auto rounded-3xl">
+      <button onclick="downloadImage(1)" class="mt-6 bg-indigo-600 text-white px-12 py-5 rounded-3xl">Скачать изображение</button>
+    </div>
+    <div id="debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
+  </div>
+
+  <!-- ГЕНЕРАЦИЯ ИЗ ТЕКСТА -->
+  <div id="section-text" class="card p-6 mx-4 rounded-3xl hidden">
+    <h2 class="text-3xl font-semibold mb-6 text-indigo-700">📝 Генерация картинок из текста</h2>
+    <div class="max-w-2xl mx-auto">
+      <textarea id="text-prompt" rows="6" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите картинку..."></textarea>
+      <button onclick="generateTextImages()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Сгенерировать 2 изображения</button>
+    </div>
+    <div id="text-result" class="mt-12 hidden">
+      <div id="text-gallery" class="grid grid-cols-2 gap-6"></div>
+    </div>
+    <div id="text-debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
+  </div>
+
+  <script>
+    const API_BASE = "/api/proxy";
+    let currentUser = null;
+    let lastVideoBase64 = '';
+    let lastVideoPrompt = '';
+    let videoInterval = null;
+
+    function checkAuth() {
+      currentUser = localStorage.getItem('currentUser');
+      if (!currentUser) {
+        window.location.href = 'index.html';
+        return false;
+      }
+      document.getElementById('current-user').textContent = `👤 ${currentUser}`;
+      if (currentUser === 'nysp') {
+        document.getElementById('admin-tab').classList.remove('hidden');
+      }
+      return true;
     }
 
-    async function apiFetch(path, options = {}) {
-      const res = await fetch('/api/proxy' + path, {
-        ...options,
-        headers: { 'Content-Type': 'application/json', ...options.headers }
+    function logout() {
+      localStorage.removeItem('currentUser');
+      window.location.href = 'index.html';
+    }
+
+    function switchTab(n) {
+      document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.add('hidden'));
+      const sections = ['video','image','text'];
+      document.getElementById('section-' + sections[n]).classList.remove('hidden');
+      document.querySelectorAll('[id^="tab"]').forEach(t => t.classList.remove('tab-active'));
+      document.getElementById('tab' + n).classList.add('tab-active');
+    }
+
+    async function apiFetch(endpoint, options = {}) {
+      const method = options.method || 'GET';
+      return fetch(API_BASE + endpoint, {
+        method: method,
+        headers: { ...options.headers, 'Content-Type': 'application/json' },
+        body: (method === 'POST' && options.body) ? options.body : undefined
       });
-      return res;
     }
 
     async function saveGeneration(type, url, prompt) {
-      await fetch('/api/generations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: currentUser, action: 'save', data: { type, url, prompt } })
-      });
+      try {
+        await fetch('/api/generations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: currentUser, action: 'save', data: { type, url, prompt } })
+        });
+      } catch(e) {}
     }
 
-    function fileToBase64(file) {
+    async function fileToBase64(file) {
       return new Promise(resolve => {
         const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onload = () => resolve(reader.result);
         reader.readAsDataURL(file);
       });
     }
 
-    // ====================== КАРТИНКИ ИЗ ФОТО ======================
-    async function editImage() {
-      const file = document.getElementById('edit-file').files[0];
-      const prompt = document.getElementById('edit-prompt').value.trim();
-      if (!file || !prompt) return alert('Загрузи фото и напиши промпт');
+    // ==================== ВИДЕО ====================
+    async function generateVideo() {
+      const file = document.getElementById('video-image-upload').files[0];
+      if (!file) return alert('Загрузите фото');
 
-      const debug = document.getElementById('edit-debug');
-      const resultDiv = document.getElementById('edit-result');
-      debug.textContent = 'Отправка...';
+      const statusEl = document.getElementById('video-status');
+      const resultDiv = document.getElementById('video-result');
+      const debug = document.getElementById('video-debug');
+      const stopBtn = document.getElementById('stop-btn');
 
-      const base64 = await fileToBase64(file);
+      resultDiv.classList.remove('hidden');
+      if (statusEl) statusEl.textContent = 'Генерация видео...';
+      if (stopBtn) stopBtn.style.display = 'block';
+      debug.innerHTML = 'Отправка запроса...\n';
+
+      if (videoInterval) clearInterval(videoInterval);
 
       try {
-        const res = await apiFetch('/v1/images/edits', {
-          method: 'POST',
-          body: JSON.stringify({ model: "grok-imagine-image", prompt, image: base64, n: 1, response_format: "b64_json" })
-        });
+        const base64Image = await fileToBase64(file);
+        const duration = currentUser === 'nysp' ? parseInt(document.getElementById('duration').value) : 8;
 
-        const raw = await res.text();
-        let data;
-        try { data = JSON.parse(raw); } catch { data = { raw }; }
+        const body = {
+          model: "grok-imagine-video",
+          prompt: document.getElementById('video-image-prompt').value || "Анимировать сцену",
+          duration: duration,
+          aspect_ratio: "9:16",
+          resolution: "480p",
+          image: { url: base64Image },
+          seed: Math.floor(Math.random() * 2147483647)
+        };
 
-        debug.innerHTML = '<strong>RAW ответ API:</strong><br>' + JSON.stringify(data, null, 2);
+        const res = await apiFetch('/v1/videos/generations', { method: 'POST', body: JSON.stringify(body) });
+        const data = await res.json();
+        debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
 
-        let b64 = null;
-        if (data.data && data.data[0] && data.data[0].b64_json) b64 = data.data[0].b64_json;
-        else if (data.data && data.data[0] && data.data[0].url) b64 = data.data[0].url.split(',')[1];
-        else if (data.b64_json) b64 = data.b64_json;
+        const requestId = data.request_id || data.id;
+        let attempts = 0;
 
-        if (b64) {
-          const url = b64.startsWith('data:') ? b64 : `data:image/jpeg;base64,${b64}`;
-          document.getElementById('edit-image').src = url;
-          document.getElementById('edit-download').href = url;
-          resultDiv.classList.remove('hidden');
-          await saveGeneration('image', url, prompt);
-          debug.innerHTML += '<br><span class="text-green-400">✅ Картинка получена и сохранена!</span>';
-        }
+        videoInterval = setInterval(async () => {
+          attempts++;
+          const statusRes = await apiFetch(`/v1/videos/${requestId}`);
+          const statusData = await statusRes.json();
+          debug.innerHTML += `Polling #${attempts}: ${JSON.stringify(statusData)}\n`;
+
+          let videoUrl = statusData.video?.url || statusData.url;
+          if (videoUrl && videoUrl.includes('vidgen.x.ai')) {
+            clearInterval(videoInterval);
+            videoInterval = null;
+            const player = document.getElementById('video-player');
+            player.src = videoUrl;
+            player.load();
+            if (statusEl) statusEl.textContent = 'Готово!';
+            await saveGeneration('video', videoUrl, body.prompt);
+            return;
+          }
+
+          if (attempts >= 40) {
+            clearInterval(videoInterval);
+            videoInterval = null;
+            if (statusEl) statusEl.textContent = 'Превышено время ожидания';
+          }
+        }, 3000);
       } catch (e) {
-        debug.innerHTML = `<span class="text-red-400">Ошибка: ${e.message}</span>`;
+        if (statusEl) statusEl.textContent = 'Ошибка генерации';
+        debug.innerHTML += '❌ Ошибка: ' + e.message;
       }
     }
 
-    // ====================== КАРТИНКИ ИЗ ТЕКСТА ======================
+    function stopVideoGeneration() {
+      if (videoInterval) clearInterval(videoInterval);
+      videoInterval = null;
+      const statusEl = document.getElementById('video-status');
+      if (statusEl) statusEl.textContent = 'Генерация остановлена';
+      const debug = document.getElementById('video-debug');
+      if (debug) debug.innerHTML += '🛑 Генерация остановлена пользователем\n';
+    }
+
+    function downloadVideo() {
+      const player = document.getElementById('video-player');
+      if (player.src) {
+        const a = document.createElement('a');
+        a.href = player.src;
+        a.download = `video-${Date.now()}.mp4`;
+        a.click();
+      }
+    }
+
+    async function extendVideo() {
+      alert('Функция продления видео в разработке');
+    }
+
+    // ==================== ИЗОБРАЖЕНИЯ ИЗ ФОТО ====================
+    async function editImage() {
+      const file = document.getElementById('main-edit-upload').files[0];
+      if (!file) return alert('Загрузите фото');
+      const prompt = document.getElementById('edit-prompt').value || "Улучшить качество";
+
+      const debug = document.getElementById('debug');
+      debug.innerHTML = 'Отправка запроса...\n';
+      document.getElementById('image-result').classList.add('hidden');
+
+      try {
+        const base64Main = await fileToBase64(file);
+        const seed = Math.floor(Math.random() * 2147483647);
+
+        const res = await apiFetch('/v1/images/edits', {
+          method: 'POST',
+          body: JSON.stringify({
+            model: "grok-imagine-image",
+            prompt,
+            image: { url: base64Main },
+            n: 1,
+            response_format: "b64_json",
+            seed
+          })
+        });
+
+        const data = await res.json();
+        debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
+
+        if (data.data && data.data[0]) {
+          const src = `data:image/jpeg;base64,${data.data[0].b64_json}`;
+          document.getElementById('variant1').src = src;
+          document.getElementById('image-result').classList.remove('hidden');
+          await saveGeneration('image', src, prompt);
+        }
+      } catch (e) {
+        debug.innerHTML += '❌ Ошибка: ' + e.message;
+      }
+    }
+
+    // ==================== ГЕНЕРАЦИЯ ИЗ ТЕКСТА ====================
     async function generateTextImages() {
       const prompt = document.getElementById('text-prompt').value.trim();
-      if (!prompt) return alert('Напиши промпт');
+      if (!prompt) return alert('Введите описание');
 
       const debug = document.getElementById('text-debug');
-      debug.innerHTML = '<span class="text-green-400">Генерация...</span>';
+      debug.innerHTML = 'Отправка запроса...\n';
+      document.getElementById('text-result').classList.add('hidden');
+      document.getElementById('text-gallery').innerHTML = '';
 
       try {
         const res = await apiFetch('/v1/images/generations', {
           method: 'POST',
-          body: JSON.stringify({ model: "grok-imagine-image", prompt, n: 1, response_format: "b64_json", seed: Math.floor(Math.random() * 2147483647) })
+          body: JSON.stringify({ 
+            model: "grok-imagine-image", 
+            prompt, 
+            n: 2, 
+            response_format: "b64_json", 
+            seed: Math.floor(Math.random() * 2147483647) 
+          })
         });
+
         const data = await res.json();
-        const url = `data:image/jpeg;base64,${data.data[0].b64_json}`;
-        await saveGeneration('image', url, prompt);
-        debug.innerHTML = '<span class="text-green-400">Готово! Сохранено в результаты</span>';
+        debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
+
+        if (data.data && data.data.length > 0) {
+          const gallery = document.getElementById('text-gallery');
+          gallery.innerHTML = '';
+          data.data.forEach((img) => {
+            const src = `data:image/jpeg;base64,${img.b64_json}`;
+            const div = document.createElement('div');
+            div.innerHTML = `<img src="\( {src}" class="w-full rounded-3xl cursor-pointer" onclick="window.open(' \){src}', '_blank')">`;
+            gallery.appendChild(div);
+            saveGeneration('image', src, prompt);
+          });
+          document.getElementById('text-result').classList.remove('hidden');
+        }
       } catch (e) {
-        debug.innerHTML = `<span class="text-red-400">Ошибка: ${e.message}</span>`;
+        debug.innerHTML += '❌ Ошибка: ' + e.message;
       }
     }
 
-    // ====================== ВИДЕО (без изменений) ======================
-    let videoInterval = null;
-    async function generateVideo() { /* код видео остался прежним */ }
-    function stopVideoGeneration() { /* код остановки остался прежним */ }
-
-    switchTab(0);
+    if (checkAuth()) {
+      switchTab(0);
+    }
   </script>
 </body>
 </html>
