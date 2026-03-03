@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     const adminPass = process.env.SITE_PASSWORD;
     let usersStr = await redis.get(keyUsers);
     console.log(`Type of usersStr: ${typeof usersStr}`);
-    let users = usersStr ? JSON.parse(usersStr) : {};
+    let users = (typeof usersStr === 'string') ? JSON.parse(usersStr) : (usersStr || {});
     if (adminPass && (!users[adminUser] || users[adminUser].password !== adminPass)) {
       console.log(`Initializing or updating admin ${adminUser}`);
       users[adminUser] = { password: adminPass, role: 'admin', maxImages: 999, maxVideos: 999 };
@@ -53,9 +53,9 @@ export default async function handler(req, res) {
     } else if (req.method === 'GET' && req.query.validate) {
       if (token) {
         const tokenKey = `token:${token}`;
-        const userDataStr = await redis.get(tokenKey);
+        let userDataStr = await redis.get(tokenKey);
         console.log(`Type of userDataStr: ${typeof userDataStr}`);
-        const userData = userDataStr ? JSON.parse(userDataStr) : null;
+        const userData = (typeof userDataStr === 'string') ? JSON.parse(userDataStr) : (userDataStr || null);
         if (userData) {
           console.log(`Validate success for token ${token}, user: ${userData.username}`);
           return res.status(200).json(userData);
