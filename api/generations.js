@@ -1,4 +1,4 @@
-mport { Redis } from '@upstash/redis';
+import { Redis } from '@upstash/redis';
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL || process.env.REDIS_URL,
@@ -15,8 +15,8 @@ export default async function handler(req, res) {
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
-    const keyTokens = 'auth_tokens';
-    const userDataStr = await redis.hget(keyTokens, token);
+    const tokenKey = `token:${token}`;
+    const userDataStr = await redis.get(tokenKey);
     if (!userDataStr) return res.status(401).json({ error: 'Invalid token' });
 
     const { username } = JSON.parse(userDataStr);
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
 
     return res.status(400).json({ error: 'Invalid action' });
   } catch (error) {
-    console.error(error);
+    console.error('Error in /api/generations:', error);
     res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };
