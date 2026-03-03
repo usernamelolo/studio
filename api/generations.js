@@ -8,32 +8,30 @@ export default async function handler(req, res) {
   }
 
   try {
-    const KV_URL = process.env.KV_REST_API_URL || process.env.KV_URL;
+    const KV_URL = process.env.KV_REST_API_URL;
     const KV_TOKEN = process.env.KV_REST_API_TOKEN;
 
     console.log('=== GENERATIONS DEBUG ===');
-    console.log('KV_REST_API_URL is set:', !!KV_URL);
-    console.log('KV_REST_API_TOKEN is set:', !!KV_TOKEN);
+    console.log('KV_REST_API_URL:', KV_URL ? KV_URL.substring(0, 40) + '...' : 'НЕ НАЙДЕН');
+    console.log('KV_REST_API_TOKEN set:', !!KV_TOKEN);
+    console.log('Method:', req.method);
+
+    if (!KV_URL || !KV_TOKEN) {
+      return res.status(500).json({ error: 'KV_REST_API_URL или KV_REST_API_TOKEN не найдены в Vercel Environment Variables' });
+    }
 
     let user, action, data = {};
 
-    // === РУЧНОЙ ПАРСИНГ ТЕЛА ДЛЯ POST (самый надёжный способ) ===
+    // Vercel автоматически парсит JSON-тело
     if (req.method === 'POST') {
-      let body = '';
-      for await (const chunk of req.body) {
-        body += chunk;
-      }
-      if (body) {
-        const parsed = JSON.parse(body);
-        user = parsed.user;
-        action = parsed.action;
-        data = parsed.data || {};
-      }
-      console.log('POST body parsed → user:', user, 'action:', action);
+      user = req.body?.user;
+      action = req.body?.action;
+      data = req.body?.data || {};
+      console.log('POST body → user:', user, 'action:', action);
     } else {
       user = req.query.user;
       action = req.query.action;
-      console.log('GET query → user:', user, 'action:', action);
+      console.log('GET query → user:', user);
     }
 
     if (!user) {
@@ -47,19 +45,10 @@ export default async function handler(req, res) {
       const getRes = await fetch(getUrl, { headers: { Authorization: `Bearer ${KV_TOKEN}` } });
       const getData = await getRes.json();
 
-      console.log('KV get result:', getData.result ? 'exists' : 'null');
-
       let list = [];
       if (getData.result) {
-        try {
-          list = JSON.parse(getData.result);
-        } catch (e) {
-          console.log('JSON parse error, starting fresh');
-          list = [];
-        }
+        try { list = JSON.parse(getData.result); } catch {}
       }
-
-      // ЗАЩИТА: всегда массив
       if (!Array.isArray(list)) list = [];
 
       list.unshift({ ...data, id: Date.now(), date: new Date().toISOString() });
@@ -74,7 +63,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({ value: JSON.stringify(list.slice(0, 300)) })
       });
 
-      console.log('✅ Сохранено успешно, элементов:', list.length);
+      console.log('✅ СОХРАНЕНО УСПЕШНО для', user);
       return res.status(200).json({ success: true });
     }
 
@@ -85,13 +74,11 @@ export default async function handler(req, res) {
 
       let list = [];
       if (getData.result) {
-        try {
-          list = JSON.parse(getData.result);
-        } catch (e) {}
+        try { list = JSON.parse(getData.result); } catch {}
       }
       if (!Array.isArray(list)) list = [];
 
-      console.log('✅ Отправлено результатов:', list.length);
+      console.log('✅ Загружено результатов:', list.length);
       return res.status(200).json(list);
     }
 
