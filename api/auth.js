@@ -17,7 +17,6 @@ export default async function handler(req, res) {
     const token = authHeader && authHeader.split(' ')[1];
 
     const keyUsers = 'all_users';
-    const keyTokens = 'auth_tokens';
 
     // Инициализация админа из env, если не существует
     const adminUser = process.env.SITE_USERNAME || 'nysp';
@@ -31,32 +30,34 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       if (action === 'login') {
         if (users[username] && users[username].password === password) {
-          const authToken = `${username}_${Date.now()}`;
-          await redis.hset(keyTokens, authToken, JSON.stringify({ username, role: users[username].role, limits: { maxImages: users[username].maxImages, maxVideos: users[username].maxVideos } }));
-          await redis.expire(keyTokens, 3600); // 1 час
+          const authToken = `\( {username}_ \){Date.now()}`;
+          const tokenKey = `token:${authToken}`;
+          await redis.set(tokenKey, JSON.stringify({ username, role: users[username].role, limits: { maxImages: users[username].maxImages, maxVideos: users[username].maxVideos } }), 'EX', 3600);
           return res.status(200).json({ success: true, authToken });
         }
         return res.status(401).json({ success: false, error: 'Invalid credentials' });
       } else if (action === 'logout') {
         if (token) {
-          await redis.hdel(keyTokens, token);
+          const tokenKey = `token:${token}`;
+          await redis.del(tokenKey);
           return res.status(200).json({ success: true });
         }
         return res.status(400).json({ error: 'No token provided' });
       }
     } else if (req.method === 'GET' && req.query.validate) {
       if (token) {
-        const userData = await redis.hget(keyTokens, token);
+        const tokenKey = `token:${token}`;
+        const userData = await redis.get(tokenKey);
         if (userData) {
           return res.status(200).json(JSON.parse(userData));
         }
       }
-      return res.status(401).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    console.error(error);
+    console.error('Error in /api/auth:', error);
     res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };
