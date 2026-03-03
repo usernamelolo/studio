@@ -21,11 +21,12 @@ export default async function handler(req, res) {
     // Инициализация админа из env, если не существует или пароль не задан
     const adminUser = process.env.SITE_USERNAME || 'nysp';
     const adminPass = process.env.SITE_PASSWORD;
-    let users = await redis.get(keyUsers) || {};
+    let usersStr = await redis.get(keyUsers);
+    let users = usersStr ? JSON.parse(usersStr) : {};
     if (adminPass && (!users[adminUser] || users[adminUser].password !== adminPass)) {
       console.log(`Initializing or updating admin ${adminUser}`);
       users[adminUser] = { password: adminPass, role: 'admin', maxImages: 999, maxVideos: 999 };
-      await redis.set(keyUsers, users);
+      await redis.set(keyUsers, JSON.stringify(users));
     }
 
     if (req.method === 'POST') {
@@ -35,6 +36,7 @@ export default async function handler(req, res) {
           const authToken = `${username}_${Date.now()}`;
           const tokenKey = `token:${authToken}`;
           await redis.set(tokenKey, JSON.stringify({ username, role: users[username].role, limits: { maxImages: users[username].maxImages, maxVideos: users[username].maxVideos } }), { ex: 3600 });
+          console.log(`Login success for ${username}, token: ${authToken}`);
           return res.status(200).json({ success: true, authToken });
         }
         console.log(`Invalid credentials for ${username}`);
@@ -50,9 +52,13 @@ export default async function handler(req, res) {
     } else if (req.method === 'GET' && req.query.validate) {
       if (token) {
         const tokenKey = `token:${token}`;
-        const userData = await redis.get(tokenKey);
+        const userDataStr = await redis.get(tokenKey);
+        const userData = userDataStr ? JSON.parse(userDataStr) : null;
         if (userData) {
-          return res.status(200).json(JSON.parse(userData));
+          console.log(`Validate success for token ${token}, user: ${userData.username}`);
+          return res.status(200).json(userData);
+        } else {
+          console.log(`Validate failed for token ${token}: no data`);
         }
       }
       return res.status(401).json({ error: 'Invalid or expired token' });
