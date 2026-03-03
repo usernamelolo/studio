@@ -59,7 +59,7 @@ export default async function handler(req, res) {
       await fetch(setUrl, {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + KV_TOKEN, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: JSON.stringify(list.slice(0, 300)) }) // чистое сохранение
+        body: JSON.stringify({ value: JSON.stringify(list.slice(0, 300)) })
       });
 
       console.log('✅ УСПЕШНО СОХРАНЕНО для', user, '| всего записей:', list.length);
@@ -76,11 +76,15 @@ export default async function handler(req, res) {
       let list = [];
       if (getData.result) {
         try {
-          let parsed = JSON.parse(getData.result); // первый parse
-          // Если внутри опять строка (старые данные) — парсим второй раз
-          if (typeof parsed === 'string') {
-            parsed = JSON.parse(parsed);
+          // === ГЛУБОКИЙ ПАРСИНГ (3 уровня) ===
+          let parsed = JSON.parse(getData.result);
+
+          if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+          if (parsed && parsed.value && typeof parsed.value === 'string') {
+            parsed = JSON.parse(parsed.value);
           }
+          if (parsed && typeof parsed === 'string') parsed = JSON.parse(parsed);
+
           if (Array.isArray(parsed)) list = parsed;
         } catch(e) {
           console.log('Parse error, starting empty');
