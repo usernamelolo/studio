@@ -17,22 +17,25 @@ export default async function handler(req, res) {
     const token = authHeader && authHeader.split(' ')[1];
     const tokenKey = `token:${token}`;
     const userDataStr = await redis.get(tokenKey);
-    if (!userDataStr) return res.status(401).json({ error: 'Invalid token' });
+    const userData = userDataStr ? JSON.parse(userDataStr) : null;
+    if (!userData) return res.status(401).json({ error: 'Invalid token' });
 
-    const { username } = JSON.parse(userDataStr);
+    const { username } = userData;
     const { action, data } = req.body;
 
     const key = `generations:${username}`;
 
     if (action === 'save') {
-      let generations = await redis.get(key) || [];
+      let generationsStr = await redis.get(key);
+      let generations = generationsStr ? JSON.parse(generationsStr) : [];
       generations.push({ ...data, date: new Date().toISOString() });
-      await redis.set(key, generations);
+      await redis.set(key, JSON.stringify(generations));
       return res.status(200).json({ success: true });
     }
 
     if (action === 'get') {
-      const generations = await redis.get(key) || [];
+      let generationsStr = await redis.get(key);
+      const generations = generationsStr ? JSON.parse(generationsStr) : [];
       return res.status(200).json(generations);
     }
 
