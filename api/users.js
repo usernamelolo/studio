@@ -17,6 +17,7 @@ export default async function handler(req, res) {
     const token = authHeader && authHeader.split(' ')[1];
     const tokenKey = `token:${token}`;
     const userDataStr = await redis.get(tokenKey);
+    console.log(`Type of userDataStr in users: ${typeof userDataStr}`);
     const userData = userDataStr ? JSON.parse(userDataStr) : null;
     if (!userData || userData.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
@@ -27,6 +28,7 @@ export default async function handler(req, res) {
     const key = 'all_users';
 
     let usersStr = await redis.get(key);
+    console.log(`Type of usersStr in users: ${typeof usersStr}`);
     let users = usersStr ? JSON.parse(usersStr) : {};
 
     if (action === 'get') {
