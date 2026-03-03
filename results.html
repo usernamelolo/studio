@@ -21,65 +21,56 @@
     </div>
 
     <div id="results-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <!-- сюда будут вставляться карточки -->
+      <!-- карточки сюда -->
     </div>
 
-    <div id="error-message" class="hidden mt-8 p-6 bg-red-950 border border-red-500 rounded-3xl text-center text-red-300 text-xl"></div>
-    <div id="empty-message" class="hidden mt-8 p-6 bg-zinc-900 border border-zinc-700 rounded-3xl text-center text-zinc-400 text-xl">Пока нет сгенерированных результатов</div>
+    <div id="empty-message" class="hidden mt-8 p-6 bg-zinc-900 border border-zinc-700 rounded-3xl text-center text-xl">Пока нет результатов</div>
   </div>
 
   <script>
     const currentUser = localStorage.getItem('currentUser');
-    if (!currentUser) {
-      window.location.href = 'index.html';
-    }
+    if (!currentUser) window.location.href = 'index.html';
 
     async function loadResults() {
       const grid = document.getElementById('results-grid');
-      const errorDiv = document.getElementById('error-message');
-      const emptyDiv = document.getElementById('empty-message');
-      
       grid.innerHTML = '';
-      errorDiv.classList.add('hidden');
-      emptyDiv.classList.add('hidden');
 
       try {
         const res = await fetch(`/api/generations?action=get&user=${encodeURIComponent(currentUser)}`);
-        const data = await res.json();
+        const list = await res.json();
 
-        console.log('Полученные данные из API:', data); // ← для отладки
-
-        if (!res.ok || data.error) {
-          errorDiv.textContent = data.error ? `Ошибка: ${data.error}` : 'Ошибка сервера при загрузке результатов';
-          errorDiv.classList.remove('hidden');
+        if (!Array.isArray(list) || list.length === 0) {
+          document.getElementById('empty-message').classList.remove('hidden');
           return;
         }
 
-        if (!Array.isArray(data) || data.length === 0) {
-          emptyDiv.classList.remove('hidden');
-          return;
-        }
-
-        // Нормальное отображение результатов
-        data.forEach(item => {
+        list.forEach(item => {
           const card = document.createElement('div');
           card.className = 'result-card bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden';
-          
+
           let content = '';
           if (item.type === 'video') {
             content = `
               <video src="${item.url}" controls class="w-full aspect-video bg-black"></video>
               <div class="p-5">
-                <p class="text-sm text-zinc-400 mb-2">Видео • ${new Date(item.date).toLocaleString('ru-RU')}</p>
+                <p class="text-sm text-zinc-400 mb-3">Видео • ${new Date(item.date).toLocaleString('ru-RU')}</p>
                 <p class="line-clamp-2 text-zinc-300">${item.prompt}</p>
+                <div class="flex gap-3 mt-4">
+                  <a href="${item.url}" download class="flex-1 bg-green-600 hover:bg-green-500 py-3 rounded-2xl text-center font-medium">Скачать</a>
+                  <button onclick="deleteResult(${item.id})" class="flex-1 bg-red-600 hover:bg-red-500 py-3 rounded-2xl text-center font-medium">Удалить</button>
+                </div>
               </div>
             `;
           } else {
             content = `
               <img src="${item.url}" class="w-full h-64 object-cover">
               <div class="p-5">
-                <p class="text-sm text-zinc-400 mb-2">Изображение • ${new Date(item.date).toLocaleString('ru-RU')}</p>
+                <p class="text-sm text-zinc-400 mb-3">Изображение • ${new Date(item.date).toLocaleString('ru-RU')}</p>
                 <p class="line-clamp-2 text-zinc-300">${item.prompt}</p>
+                <div class="flex gap-3 mt-4">
+                  <a href="${item.url}" download class="flex-1 bg-green-600 hover:bg-green-500 py-3 rounded-2xl text-center font-medium">Скачать</a>
+                  <button onclick="deleteResult(${item.id})" class="flex-1 bg-red-600 hover:bg-red-500 py-3 rounded-2xl text-center font-medium">Удалить</button>
+                </div>
               </div>
             `;
           }
@@ -87,12 +78,19 @@
           card.innerHTML = content;
           grid.appendChild(card);
         });
-
       } catch (err) {
         console.error(err);
-        errorDiv.textContent = 'Не удалось загрузить результаты. Проверьте подключение.';
-        errorDiv.classList.remove('hidden');
       }
+    }
+
+    async function deleteResult(id) {
+      if (!confirm('Удалить этот результат?')) return;
+      await fetch('/api/generations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: currentUser, action: 'delete', data: { id } })
+      });
+      loadResults();
     }
 
     loadResults();
