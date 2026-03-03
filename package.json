@@ -1,7 +1,10 @@
    {
-     "name": "studio",
-     "version": "1.0.0",
-     "dependencies": {
-       "@upstash/redis": "^1.25.1"
-     }
-   }
+  "name": "studio",
+  "version": "1.0.0",
+  "dependencies": {
+    "@upstash/redis": "^1.25.1"
+  },
+  "engines": {
+    "node": "18"
+  }
+}
