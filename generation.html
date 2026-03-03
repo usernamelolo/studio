@@ -18,18 +18,18 @@ export default async function handler(req, res) {
 
     const keyUsers = 'all_users';
 
-    // Инициализация админа из env, всегда обновляем если SITE_PASSWORD задан
+    // Force update admin from env every request to ensure sync
     const adminUser = process.env.SITE_USERNAME || 'nysp';
     const adminPass = process.env.SITE_PASSWORD;
     let usersStr = await redis.get(keyUsers);
     console.log(`Type of usersStr: ${typeof usersStr}`);
-    let users = usersStr ? JSON.parse(usersStr) : {};
+    let users = (typeof usersStr === 'string') ? JSON.parse(usersStr) : (usersStr || {});
     if (adminPass) {
-      console.log(`Force updating admin ${adminUser} password from env`);
+      console.log(`Force updating admin ${adminUser} from env`);
       users[adminUser] = { password: adminPass, role: 'admin', maxImages: 999, maxVideos: 999 };
       await redis.set(keyUsers, JSON.stringify(users));
     } else {
-      console.log('No SITE_PASSWORD, skipping admin update');
+      console.warn('No SITE_PASSWORD set');
     }
 
     if (req.method === 'POST') {
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
         console.log(`Login attempt for ${username}`);
         if (users[username]) {
           console.log(`Stored password length for ${username}: ${users[username].password.length}`);
-          console.log(`Provided password length: ${password ? password.length : 'no password provided'}`);
+          console.log(`Provided password length: ${password ? password.length : 'no password'}`);
           if (users[username].password === password) {
             const authToken = `\( {username}_ \){Date.now()}`;
             const tokenKey = `token:${authToken}`;
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
         const tokenKey = `token:${token}`;
         let userDataStr = await redis.get(tokenKey);
         console.log(`Type of userDataStr: ${typeof userDataStr}`);
-        const userData = userDataStr ? JSON.parse(userDataStr) : null;
+        const userData = (typeof userDataStr === 'string') ? JSON.parse(userDataStr) : (userDataStr || null);
         if (userData) {
           console.log(`Validate success for token ${token}, user: ${userData.username}`);
           return res.status(200).json(userData);
