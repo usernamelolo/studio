@@ -12,26 +12,33 @@ export default async function handler(req, res) {
     const KV_TOKEN = process.env.KV_REST_API_TOKEN;
 
     console.log('=== GENERATIONS DEBUG ===');
-    console.log('KV_REST_API_URL:', KV_REST_URL ? 'set (' + KV_REST_URL.substring(0, 50) + '...)' : 'MISSING');
+    console.log('KV_REST_API_URL set:', !!KV_REST_URL);
     console.log('KV_TOKEN set:', !!KV_TOKEN);
     console.log('Method:', req.method);
 
-    if (!KV_REST_URL || !KV_REST_URL.startsWith('https://')) {
-      return res.status(500).json({ error: 'KV_REST_API_URL не настроен или неправильный (должен быть https://...)' });
-    }
-    if (!KV_TOKEN) {
-      return res.status(500).json({ error: 'KV_REST_API_TOKEN не настроен' });
+    if (!KV_REST_URL || !KV_TOKEN) {
+      return res.status(500).json({ error: 'KV variables missing' });
     }
 
     let user, action, data = {};
 
+    // Ручной парсинг тела POST (самый надёжный способ для Vercel)
     if (req.method === 'POST') {
-      user = req.body?.user;
-      action = req.body?.action;
-      data = req.body?.data || {};
+      let body = '';
+      for await (const chunk of req.body) {
+        body += chunk;
+      }
+      if (body) {
+        const parsed = JSON.parse(body);
+        user = parsed.user;
+        action = parsed.action;
+        data = parsed.data || {};
+      }
+      console.log('POST parsed → user:', user, '| action:', action);
     } else {
       user = req.query.user;
       action = req.query.action;
+      console.log('GET → user:', user);
     }
 
     if (!user) {
@@ -63,7 +70,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({ value: JSON.stringify(list.slice(0, 300)) })
       });
 
-      console.log('✅ СОХРАНЕНО для пользователя', user);
+      console.log('✅ УСПЕШНО СОХРАНЕНО для', user, '| всего записей теперь:', list.length);
       return res.status(200).json({ success: true });
     }
 
