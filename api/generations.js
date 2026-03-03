@@ -22,19 +22,12 @@ export default async function handler(req, res) {
 
     let user, action, data = {};
 
-    // Ручной парсинг тела POST (самый надёжный способ для Vercel)
+    // ПРЯМОЕ ИСПОЛЬЗОВАНИЕ req.body — Vercel сам парсит JSON
     if (req.method === 'POST') {
-      let body = '';
-      for await (const chunk of req.body) {
-        body += chunk;
-      }
-      if (body) {
-        const parsed = JSON.parse(body);
-        user = parsed.user;
-        action = parsed.action;
-        data = parsed.data || {};
-      }
-      console.log('POST parsed → user:', user, '| action:', action);
+      user = req.body?.user;
+      action = req.body?.action;
+      data = req.body?.data || {};
+      console.log('POST body → user:', user, '| action:', action);
     } else {
       user = req.query.user;
       action = req.query.action;
@@ -70,7 +63,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({ value: JSON.stringify(list.slice(0, 300)) })
       });
 
-      console.log('✅ УСПЕШНО СОХРАНЕНО для', user, '| всего записей теперь:', list.length);
+      console.log('✅ УСПЕШНО СОХРАНЕНО для', user, '| всего записей:', list.length);
       return res.status(200).json({ success: true });
     }
 
