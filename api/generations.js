@@ -11,8 +11,8 @@ export default async function handler(req, res) {
     const KV_REST_URL = process.env.KV_REST_API_URL;
     const KV_TOKEN = process.env.KV_REST_API_TOKEN;
 
-    console.log('=== GENERATIONS DEBUG ===');
-    console.log('KV_REST_API_URL set:', !!KV_REST_URL);
+    console.log('=== GENERATIONS DEBUG START ===');
+    console.log('KV_REST_API_URL:', KV_REST_URL ? KV_REST_URL.substring(0, 60) + '...' : 'MISSING');
     console.log('KV_TOKEN set:', !!KV_TOKEN);
     console.log('Method:', req.method);
 
@@ -22,16 +22,15 @@ export default async function handler(req, res) {
 
     let user, action, data = {};
 
-    // ПРЯМОЕ ИСПОЛЬЗОВАНИЕ req.body — Vercel сам парсит JSON
     if (req.method === 'POST') {
       user = req.body?.user;
       action = req.body?.action;
       data = req.body?.data || {};
-      console.log('POST body → user:', user, '| action:', action);
+      console.log('POST body → user:', user, 'action:', action, 'data keys:', Object.keys(data));
     } else {
       user = req.query.user;
       action = req.query.action;
-      console.log('GET → user:', user);
+      console.log('GET query → user:', user, 'action:', action);
     }
 
     if (!user) {
@@ -39,31 +38,34 @@ export default async function handler(req, res) {
     }
 
     const key = 'results:' + user;
+    console.log('Используемый ключ в KV:', key);
 
     if (action === 'save') {
+      console.log('Сохраняем данные:', JSON.stringify(data).substring(0, 200) + '...');
+
       const getUrl = KV_REST_URL + '/get/' + encodeURIComponent(key);
       const getRes = await fetch(getUrl, { headers: { Authorization: 'Bearer ' + KV_TOKEN } });
       const getData = await getRes.json();
+      console.log('RAW KV get (save):', JSON.stringify(getData).substring(0, 300));
 
       let list = [];
       if (getData.result) {
-        try { list = JSON.parse(getData.result); } catch(e) {}
+        try { list = JSON.parse(getData.result); } catch(e) { console.log('Parse error on load'); }
       }
       if (!Array.isArray(list)) list = [];
 
+      console.log('Список до добавления:', list.length);
       list.unshift({ ...data, id: Date.now(), date: new Date().toISOString() });
+      console.log('Список после добавления:', list.length);
 
       const setUrl = KV_REST_URL + '/set/' + encodeURIComponent(key);
       await fetch(setUrl, {
         method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + KV_TOKEN,
-          'Content-Type': 'application/json'
-        },
+        headers: { Authorization: 'Bearer ' + KV_TOKEN, 'Content-Type': 'application/json' },
         body: JSON.stringify({ value: JSON.stringify(list.slice(0, 300)) })
       });
 
-      console.log('✅ УСПЕШНО СОХРАНЕНО для', user, '| всего записей:', list.length);
+      console.log('✅ УСПЕШНО СОХРАНЕНО для', user);
       return res.status(200).json({ success: true });
     }
 
@@ -71,10 +73,11 @@ export default async function handler(req, res) {
       const getUrl = KV_REST_URL + '/get/' + encodeURIComponent(key);
       const getRes = await fetch(getUrl, { headers: { Authorization: 'Bearer ' + KV_TOKEN } });
       const getData = await getRes.json();
+      console.log('RAW KV get (load):', JSON.stringify(getData).substring(0, 300));
 
       let list = [];
       if (getData.result) {
-        try { list = JSON.parse(getData.result); } catch(e) {}
+        try { list = JSON.parse(getData.result); } catch(e) { console.log('Parse error on load'); }
       }
       if (!Array.isArray(list)) list = [];
 
