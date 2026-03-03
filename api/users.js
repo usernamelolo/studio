@@ -15,8 +15,8 @@ export default async function handler(req, res) {
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
-    const keyTokens = 'auth_tokens';
-    const userDataStr = await redis.hget(keyTokens, token);
+    const tokenKey = `token:${token}`;
+    const userDataStr = await redis.get(tokenKey);
     if (!userDataStr || JSON.parse(userDataStr).role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
 
     return res.status(400).json({ error: 'Неизвестное действие' });
   } catch (error) {
-    console.error(error);
+    console.error('Error in /api/users:', error);
     res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };
