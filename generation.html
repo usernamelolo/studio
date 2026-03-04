@@ -76,7 +76,7 @@
     </div>
     <div id="image-result" class="mt-12 hidden text-center">
       <img id="variant1" class="max-w-2xl mx-auto rounded-3xl">
-      <button onclick="downloadImage(1)" class="mt-6 bg-indigo-600 text-white px-12 py-5 rounded-3xl">Скачать изображение</button>
+      <button onclick="downloadImage('variant1')" class="mt-6 bg-indigo-600 text-white px-12 py-5 rounded-3xl">Скачать изображение</button>
     </div>
     <div id="debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
   </div>
@@ -88,8 +88,9 @@
       <textarea id="text-prompt" rows="6" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите картинку..."></textarea>
       <button onclick="generateTextImages()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">Сгенерировать 1 изображение</button>
     </div>
-    <div id="text-result" class="mt-12 hidden">
-      <div id="text-gallery" class="flex flex-col items-center gap-6"></div> <!-- Изменено на flex-col для полноразмерных изображений -->
+    <div id="text-result" class="mt-12 hidden text-center">
+      <img id="text-variant" class="max-w-2xl mx-auto rounded-3xl">
+      <button onclick="downloadImage('text-variant')" class="mt-6 bg-indigo-600 text-white px-12 py-5 rounded-3xl">Скачать изображение</button>
     </div>
     <div id="text-debug" class="mt-8 bg-slate-900 text-emerald-300 p-6 rounded-2xl font-mono text-sm overflow-auto max-h-96"></div>
   </div>
@@ -367,7 +368,6 @@
       const debug = document.getElementById('text-debug');
       debug.innerHTML = 'Отправка запроса...\n';
       document.getElementById('text-result').classList.add('hidden');
-      document.getElementById('text-gallery').innerHTML = '';
 
       try {
         const res = await apiFetch('/v1/images/generations', {
@@ -410,20 +410,10 @@
         }
 
         if (data.data && data.data.length > 0) {
-          const gallery = document.getElementById('text-gallery');
-          gallery.innerHTML = '';
-          data.data.forEach((img, index) => {
-            const src = `data:image/jpeg;base64,${img.b64_json}`;
-            const div = document.createElement('div');
-            div.classList.add('text-center');
-            div.innerHTML = `
-              <img src="\( {src}" class="max-w-2xl mx-auto rounded-3xl cursor-pointer" onclick="window.open(' \){src}', '_blank')">
-              <button onclick="downloadTextImage('${src}')" class="mt-4 bg-indigo-600 text-white px-8 py-3 rounded-2xl">Скачать изображение ${index + 1}</button>
-            `;
-            gallery.appendChild(div);
-            saveGeneration('image', src, prompt);
-          });
+          const src = `data:image/jpeg;base64,${data.data[0].b64_json}`;
+          document.getElementById('text-variant').src = src;
           document.getElementById('text-result').classList.remove('hidden');
+          await saveGeneration('image', src, prompt);
         }
       } catch (e) {
         debug.innerHTML += '❌ Ошибка: ' + e.message;
@@ -432,11 +422,14 @@
       }
     }
 
-    function downloadTextImage(src) {
-      const a = document.createElement('a');
-      a.href = src;
-      a.download = `image-${Date.now()}.jpg`;
-      a.click();
+    function downloadImage(imgId) {
+      const img = document.getElementById(imgId);
+      if (img && img.src) {
+        const a = document.createElement('a');
+        a.href = img.src;
+        a.download = `image-${Date.now()}.jpg`;
+        a.click();
+      }
     }
 
     if (checkAuth()) {
