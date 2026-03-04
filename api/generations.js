@@ -1,49 +1,137 @@
-import { Redis } from '@upstash/redis';
-
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL || process.env.REDIS_URL,
-  token: process.env.KV_REST_API_TOKEN
-});
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
-    const tokenKey = `token:${token}`;
-    let userDataStr = await redis.get(tokenKey);
-    console.log(`Type of userDataStr in generations: ${typeof userDataStr}`);
-    const userData = (typeof userDataStr === 'string') ? JSON.parse(userDataStr) : (userDataStr || null);
-    if (!userData) return res.status(401).json({ error: 'Invalid token' });
+    const KV_REST_URL = process.env.KV_REST_API_URL;
+    const KV_TOKEN = process.env.KV_REST_API_TOKEN;
 
-    const { username } = userData;
-    const { action, data } = req.body;
+    let user, action, data = {};
 
-    const key = `generations:${username}`;
+    if (req.method === 'POST') {
+      user = req.body?.user;
+      action = req.body?.action;
+      data = req.body?.data || {};
+    } else {
+      user = req.query.user;
+      action = req.query.action;
+    }
+
+    if (!user) {
+      return res.status(400).json({ error: 'user is required' });
+    }
+
+    const key = 'results:' + user;
 
     if (action === 'save') {
-      let generationsStr = await redis.get(key);
-      console.log(`Type of generationsStr: ${typeof generationsStr}`);
-      let generations = (typeof generationsStr === 'string') ? JSON.parse(generationsStr) : (generationsStr || []);
-      generations.push({ ...data, date: new Date().toISOString() });
-      await redis.set(key, JSON.stringify(generations));
+      const getRes = await fetch(`${KV_REST_URL}/get/${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${KV_TOKEN}` }
+      });
+      const getData = await getRes.json();
+
+      let list = [];
+      if (getData.result) {
+        let raw = getData.result;
+        for (let i = 0; i < 4; i++) {
+          try {
+            let temp = JSON.parse(raw);
+            if (typeof temp === 'string') raw = temp;
+            else if (temp && temp.value) raw = temp.value;
+            else if (Array.isArray(temp)) { list = temp; break; }
+            else list = temp;
+          } catch(e) { break; }
+        }
+        if (!Array.isArray(list) && typeof raw === 'string') {
+          try { list = JSON.parse(raw); } catch(e) {}
+        }
+      }
+      if (!Array.isArray(list)) list = [];
+
+      list.unshift({ ...data, id: Date.now(), date: new Date().toISOString() });
+
+      await fetch(`${KV_REST_URL}/set/${encodeURIComponent(key)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: JSON.stringify(list.slice(0, 500)) })
+      });
+
+      console.log(`✅ СОХРАНЕНО | Всего записей: ${list.length}`);
       return res.status(200).json({ success: true });
     }
 
     if (action === 'get') {
-      let generationsStr = await redis.get(key);
-      const generations = (typeof generationsStr === 'string') ? JSON.parse(generationsStr) : (generationsStr || []);
-      return res.status(200).json(generations);
+      const getRes = await fetch(`${KV_REST_URL}/get/${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${KV_TOKEN}` }
+      });
+      const getData = await getRes.json();
+
+      let list = [];
+      if (getData.result) {
+        let raw = getData.result;
+        for (let i = 0; i < 4; i++) {
+          try {
+            let temp = JSON.parse(raw);
+            if (typeof temp === 'string') raw = temp;
+            else if (temp && temp.value) raw = temp.value;
+            else if (Array.isArray(temp)) { list = temp; break; }
+            else list = temp;
+          } catch(e) { break; }
+        }
+        if (!Array.isArray(list) && typeof raw === 'string') {
+          try { list = JSON.parse(raw); } catch(e) {}
+        }
+      }
+      if (!Array.isArray(list)) list = [];
+
+      console.log(`✅ Загружено результатов: ${list.length}`);
+      return res.status(200).json(list);
     }
 
-    return res.status(400).json({ error: 'Invalid action' });
+    if (action === 'delete') {
+      const idToDelete = data.id;
+      const getRes = await fetch(`${KV_REST_URL}/get/${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${KV_TOKEN}` }
+      });
+      const getData = await getRes.json();
+
+      let list = [];
+      if (getData.result) {
+        let raw = getData.result;
+        for (let i = 0; i < 4; i++) {
+          try {
+            let temp = JSON.parse(raw);
+            if (typeof temp === 'string') raw = temp;
+            else if (temp && temp.value) raw = temp.value;
+            else if (Array.isArray(temp)) { list = temp; break; }
+            else list = temp;
+          } catch(e) { break; }
+        }
+        if (!Array.isArray(list) && typeof raw === 'string') {
+          try { list = JSON.parse(raw); } catch(e) {}
+        }
+      }
+
+      list = list.filter(item => item.id !== idToDelete);
+
+      await fetch(`${KV_REST_URL}/set/${encodeURIComponent(key)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: JSON.stringify(list) })
+      });
+
+      console.log(`✅ УДАЛЕНО ID ${idToDelete}`);
+      return res.status(200).json({ success: true });
+    }
+
+    return res.status(400).json({ error: 'invalid action' });
+
   } catch (error) {
-    console.error('Error in /api/generations:', error);
-    res.status(500).json({ error: 'Internal server error', message: error.message });
+    console.error('Generations error:', error);
+    return res.status(500).json({ error: error.message });
   }
-};
+}

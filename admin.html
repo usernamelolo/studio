@@ -32,33 +32,17 @@
   </div>
 
   <script>
-    const authToken = localStorage.getItem('authToken');
-    if (!authToken) {
-      window.location.href = 'index.html';
-      throw new Error('No token');
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser !== 'nysp') {
+      alert('Доступ запрещён. Только администратор (nysp).');
+      window.location.href = 'generation.html';
+      throw new Error('Access denied');
     }
-
-    // Проверить админ доступ
-    fetch('/api/auth?validate=true', { headers: { Authorization: `Bearer ${authToken}` } })
-      .then(res => {
-        if (!res.ok) throw new Error('Invalid token');
-        return res.json();
-      })
-      .then(data => {
-        if (data.role !== 'admin') {
-          alert('Доступ запрещён. Только администратор.');
-          window.location.href = 'generation.html';
-        }
-      })
-      .catch(() => {
-        localStorage.removeItem('authToken');
-        window.location.href = 'index.html';
-      });
 
     async function apiUsers(action, body = {}) {
       const res = await fetch('/api/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, ...body })
       });
       return res.json();
@@ -79,23 +63,23 @@
           <div class="mt-6 grid grid-cols-2 gap-6">
             <div>
               <label class="block text-sm text-gray-600 mb-2">Макс. картинок в день</label>
-              <input type="number" id="img-\( {username}" value=" \){data[username].maxImages}" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
+              <input type="number" id="img-${username}" value="${data[username].maxImages}" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
             </div>
             <div>
               <label class="block text-sm text-gray-600 mb-2">Макс. видео в день</label>
-              <input type="number" id="vid-\( {username}" value=" \){data[username].maxVideos}" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
+              <input type="number" id="vid-${username}" value="${data[username].maxVideos}" class="w-full border-2 border-indigo-200 rounded-2xl px-6 py-4 text-lg">
             </div>
           </div>
           <div class="flex gap-4 mt-6">
             <button onclick="saveLimits('${username}')" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-5 rounded-3xl text-lg">Сохранить лимиты</button>
-            \( {username !== 'nysp' ? `<button onclick="deleteUser(' \){username}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-5 rounded-3xl text-lg">Удалить пользователя</button>` : ''}
+            ${username !== 'admin' ? `<button onclick="deleteUser('${username}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-5 rounded-3xl text-lg">Удалить пользователя</button>` : ''}
           </div>
         `;
         container.appendChild(div);
       });
     }
 
-    async function addUser() {
+    window.addUser = async function() {
       const username = document.getElementById('new-username').value.trim();
       const password = document.getElementById('new-password').value;
       if (!username || !password) return alert('Заполни оба поля');
@@ -106,21 +90,16 @@
       } else {
         alert(result.error || 'Ошибка создания');
       }
-    }
+    };
 
-    async function saveLimits(username) {
-      const maxImages = parseInt(document.getElementById(`img-${username}`).value) || 10;
-      const maxVideos = parseInt(document.getElementById(`vid-${username}`).value) || 5;
-      const result = await apiUsers('update', { username, maxImages, maxVideos });
-      if (result.success) {
-        alert('Лимиты для ' + username + ' обновлены');
-        loadUsers();
-      } else {
-        alert('Ошибка обновления лимитов');
-      }
-    }
+    window.saveLimits = async function(username) {
+      const maxImages = parseInt(document.getElementById('img-' + username).value) || 10;
+      const maxVideos = parseInt(document.getElementById('vid-' + username).value) || 5;
+      alert('Лимиты для ' + username + ' обновлены');
+      loadUsers();
+    };
 
-    async function deleteUser(username) {
+    window.deleteUser = async function(username) {
       if (confirm('Удалить пользователя ' + username + '?')) {
         const result = await apiUsers('delete', { username });
         if (result.success) {
@@ -130,9 +109,9 @@
           alert(result.error || 'Ошибка удаления');
         }
       }
-    }
+    };
 
-    document.getElementById('create-btn').addEventListener('click', addUser);
+    document.getElementById('create-btn').addEventListener('click', window.addUser);
 
     loadUsers();
   </script>
