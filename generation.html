@@ -195,7 +195,8 @@
               data.error.toLowerCase().includes('moderation') ||
               data.error.toLowerCase().includes('content policy') ||
               data.error.toLowerCase().includes('violation') ||
-              data.error.toLowerCase().includes('inappropriate')
+              data.error.toLowerCase().includes('inappropriate') ||
+              data.error.toLowerCase().includes('rejected')
             )) ||
             data.flagged === true ||
             (data.message && data.message.toLowerCase().includes('moderation'))) {
@@ -229,6 +230,29 @@
           const statusRes = await apiFetch(`/v1/videos/${requestId}`);
           const statusData = await statusRes.json();
           debug.innerHTML += `Polling #${attempts}: ${JSON.stringify(statusData)}\n`;
+
+          // Проверка на модерацию внутри polling'а
+          if (statusData.error || statusData.code) {
+            const errText = (statusData.error || statusData.message || '').toLowerCase();
+            if (errText.includes('moderation') ||
+                errText.includes('content policy') ||
+                errText.includes('violation') ||
+                errText.includes('inappropriate') ||
+                errText.includes('rejected')) {
+
+              let msg = 'Контент не прошёл модерацию. Генерация остановлена.';
+              if (statusData.error) msg += ` ${statusData.error}`;
+              if (statusData.message) msg += ` ${statusData.message}`;
+
+              clearInterval(videoInterval);
+              videoInterval = null;
+              if (statusEl) statusEl.textContent = msg;
+              debug.innerHTML += `🛑 ${msg}\n`;
+              if (stopBtn) stopBtn.style.display = 'none';
+
+              return; // ← прерываем polling
+            }
+          }
 
           let videoUrl = statusData.video?.url || statusData.url;
           if (videoUrl && videoUrl.includes('vidgen.x.ai')) {
@@ -306,6 +330,22 @@
         const data = await res.json();
         debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
 
+        if (!res.ok ||
+            (data.error && (
+              data.error.toLowerCase().includes('moderation') ||
+              data.error.toLowerCase().includes('content policy') ||
+              data.error.toLowerCase().includes('violation') ||
+              data.error.toLowerCase().includes('inappropriate') ||
+              data.error.toLowerCase().includes('rejected')
+            ))) {
+          let msg = 'Контент не прошёл модерацию.';
+          if (data.error) msg += ` ${data.error}`;
+          debug.innerHTML += `🛑 ${msg}\n`;
+          document.getElementById('image-result').innerHTML = `<p class="text-red-600 text-xl text-center">${msg}</p>`;
+          document.getElementById('image-result').classList.remove('hidden');
+          return;
+        }
+
         if (data.data && data.data[0]) {
           const src = `data:image/jpeg;base64,${data.data[0].b64_json}`;
           document.getElementById('variant1').src = src;
@@ -333,7 +373,7 @@
           body: JSON.stringify({ 
             model: "grok-imagine-image", 
             prompt, 
-            n: 1, // ← изменено с 2 на 1
+            n: 1, 
             response_format: "b64_json", 
             seed: Math.floor(Math.random() * 2147483647) 
           })
@@ -342,23 +382,33 @@
         const data = await res.json();
         debug.innerHTML += `Статус: ${res.status}\n` + JSON.stringify(data, null, 2) + '\n\n';
 
+        if (!res.ok ||
+            (data.error && (
+              data.error.toLowerCase().includes('moderation') ||
+              data.error.toLowerCase().includes('content policy') ||
+              data.error.toLowerCase().includes('violation') ||
+              data.error.toLowerCase().includes('inappropriate') ||
+              data.error.toLowerCase().includes('rejected')
+            ))) {
+          let msg = 'Контент не прошёл модерацию.';
+          if (data.error) msg += ` ${data.error}`;
+          debug.innerHTML += `🛑 ${msg}\n`;
+          document.getElementById('text-result').innerHTML = `<p class="text-red-600 text-xl text-center">${msg}</p>`;
+          document.getElementById('text-result').classList.remove('hidden');
+          return;
+        }
+
         if (data.data && data.data.length > 0) {
           const gallery = document.getElementById('text-gallery');
           gallery.innerHTML = '';
           data.data.forEach((img) => {
             const src = `data:image/jpeg;base64,${img.b64_json}`;
             const div = document.createElement('div');
-            div.innerHTML = `<img src="${src}" class="w-full rounded-3xl cursor-pointer" onclick="window.open('${src}', '_blank')">`;
+            div.innerHTML = `<img src="\( {src}" class="w-full rounded-3xl cursor-pointer" onclick="window.open(' \){src}', '_blank')">`;
             gallery.appendChild(div);
             saveGeneration('image', src, prompt);
           });
           document.getElementById('text-result').classList.remove('hidden');
-        } else if (data.error) {
-          debug.innerHTML += `Ошибка: ${data.error}\n`;
-          if (data.error.toLowerCase().includes('moderation') || data.error.toLowerCase().includes('policy')) {
-            document.getElementById('text-result').innerHTML = '<p class="text-red-600 text-xl text-center">Контент не прошёл модерацию</p>';
-            document.getElementById('text-result').classList.remove('hidden');
-          }
         }
       } catch (e) {
         debug.innerHTML += '❌ Ошибка: ' + e.message;
