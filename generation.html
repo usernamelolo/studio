@@ -32,73 +32,8 @@
     <button onclick="switchTab(2)" id="tab2" class="w-full max-w-xs px-10 py-5 text-2xl rounded-3xl border-2 border-indigo-200">📝 Генерация из текста</button>
   </div>
 
-  <!-- ВИДЕО ИЗ ФОТО -->
-  <div id="section-video" class="card p-6 mx-4 rounded-3xl">
-    <h2 class="text-3xl font-semibold mb-6 text-indigo-700">🎥 Видео из загруженного фото</h2>
-    <div class="max-w-2xl mx-auto">
-      <input type="file" id="video-image-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-6 text-center cursor-pointer mb-6">
-      <textarea id="video-image-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите желаемую анимацию..."></textarea>
-      
-      <div class="mt-6">
-        <label class="block text-sm mb-2 text-gray-600">Длительность видео</label>
-        <select id="duration" class="w-full border border-indigo-200 rounded-xl p-3">
-          <option value="3" selected>3 секунды</option>
-          <option value="6">6 секунд</option>
-          <option value="10">10 секунд</option>
-          <option value="15">15 секунд</option>
-        </select>
-      </div>
-
-      <button onclick="generateVideo()" class="mt-10 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">
-        Создать видео
-      </button>
-    </div>
-
-    <div id="video-result" class="mt-12 hidden">
-      <div id="video-status" class="text-center text-xl mb-6 text-gray-700">Генерация видео...</div>
-      <video id="video-player" controls class="w-full max-w-4xl mx-auto rounded-3xl"></video>
-      <div class="flex gap-4 mt-6">
-        <button onclick="downloadVideo()" class="flex-1 bg-indigo-600 text-white py-5 rounded-3xl">Скачать</button>
-        <button onclick="stopVideoGeneration()" class="flex-1 bg-red-600 text-white py-5 rounded-3xl">Отмена</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ИЗОБРАЖЕНИЯ ИЗ ФОТО -->
-  <div id="section-image" class="card p-6 mx-4 rounded-3xl hidden">
-    <h2 class="text-3xl font-semibold mb-6 text-indigo-700">🖼️ Изображения из загруженного фото</h2>
-    <div class="max-w-2xl mx-auto">
-      <input type="file" id="main-edit-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-6 text-center cursor-pointer mb-6">
-      <textarea id="edit-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите желаемые изменения..."></textarea>
-      <button onclick="editImage()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">
-        Сгенерировать 1 изображение
-      </button>
-    </div>
-
-    <div id="image-result" class="mt-12 hidden text-center">
-      <img id="variant1" class="max-w-2xl mx-auto rounded-3xl">
-      <button onclick="downloadImage(1)" class="mt-6 bg-indigo-600 text-white px-12 py-5 rounded-3xl">Скачать изображение</button>
-    </div>
-  </div>
-
-  <!-- ГЕНЕРАЦИЯ ИЗ ТЕКСТА -->
-  <div id="section-text" class="card p-6 mx-4 rounded-3xl hidden">
-    <h2 class="text-3xl font-semibold mb-6 text-indigo-700">📝 Генерация картинок из текста</h2>
-    <div class="max-w-2xl mx-auto">
-      <textarea id="text-prompt" rows="6" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите картинку..."></textarea>
-      <button onclick="generateTextImages()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">
-        Сгенерировать 1 изображение
-      </button>
-    </div>
-
-    <div id="text-result" class="mt-12 hidden">
-      <div id="text-gallery" class="grid grid-cols-1 gap-6"></div>
-    </div>
-        body: (options.method === 'POST' && options.body) ? options.body : undefined
-      });
-    }
-
-    // ←←← ЭТА ФУНКЦИЯ БЫЛА ОТСУТСТВОВАЛА ←←←
+  <!-- ВИДЕО -->
+      <button onclick="downloadImage()" class="mt-6 bg-indigo-600 text-white px-12 py-5 rounded-3xl">Скачать изображение</button>
     async function fileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -116,7 +51,7 @@
       const statusEl = document.getElementById('video-status');
       const resultDiv = document.getElementById('video-result');
       resultDiv.classList.remove('hidden');
-      statusEl.textContent = 'Подготовка изображения...';
+      statusEl.textContent = 'Подготовка...';
 
       try {
         const base64Image = await fileToBase64(file);
@@ -144,25 +79,16 @@
         }
 
         const requestId = data.request_id || data.id;
-        if (!requestId) {
-          statusEl.textContent = 'Не получен request_id';
-          return;
-        }
+        if (!requestId) return statusEl.textContent = 'Ошибка: нет request_id';
 
         videoInterval = setInterval(async () => {
           try {
             const statusRes = await apiFetch(`/v1/videos/${requestId}`);
             const statusData = await statusRes.json();
-            logDebug("Статус видео", statusData);
+            logDebug("Статус", statusData);
 
             const progress = statusData.progress || 0;
-            statusEl.innerHTML = `Генерация видео... <span class="font-mono">${progress}%</span>`;
-
-            if (statusData.status === 'failed' || statusData.error) {
-              clearInterval(videoInterval);
-              statusEl.innerHTML = `<span class="text-red-600">Ошибка: ${statusData.error || 'Неизвестная'}</span>`;
-              return;
-            }
+            statusEl.innerHTML = `Генерация... <span class="font-mono">${progress}%</span>`;
 
             if (statusData.status === 'done') {
               clearInterval(videoInterval);
@@ -171,15 +97,16 @@
                 statusEl.textContent = 'Готово! Загрузка...';
                 await loadVideoWithProxyFallback(videoUrl);
               }
+            } else if (statusData.status === 'failed' || statusData.error) {
+              clearInterval(videoInterval);
+              statusEl.innerHTML = `<span class="text-red-600">Ошибка: ${statusData.error || 'Неизвестная'}</span>`;
             }
-          } catch (e) {
-            logDebug("Polling error", e.message);
-          }
+          } catch (e) { logDebug("Polling error", e.message); }
         }, 3500);
 
       } catch (e) {
         logDebug("ОШИБКА generateVideo", e.message);
-        statusEl.textContent = 'Ошибка генерации видео';
+        statusEl.textContent = 'Ошибка генерации';
       }
     }
 
@@ -191,18 +118,20 @@
       player.load();
 
       player.onerror = () => {
-        logDebug("Прямая загрузка не удалась → используем прокси");
-        const proxied = `${API_BASE}/video?url=${encodeURIComponent(originalUrl)}`;
-        player.src = proxied;
+        logDebug("Прямая загрузка не удалась, используем прокси");
+        const proxiedUrl = `${API_BASE}/video?url=${encodeURIComponent(originalUrl)}`;
+        player.src = proxiedUrl;
         player.load();
       };
 
-      player.onloadedmetadata = () => statusEl.textContent = '✅ Видео готово!';
+      player.onloadedmetadata = () => {
+        statusEl.textContent = '✅ Видео готово!';
+      };
     }
 
     function stopVideoGeneration() {
       if (videoInterval) clearInterval(videoInterval);
-      document.getElementById('video-status').textContent = 'Генерация остановлена';
+      document.getElementById('video-status').textContent = 'Остановлено';
     }
 
     function downloadVideo() {
@@ -215,31 +144,29 @@
       }
     }
 
-    // ==================== ИЗОБРАЖЕНИЯ ИЗ ФОТО ====================
+    // ==================== ИЗОБРАЖЕНИЯ ====================
     async function editImage() {
       const file = document.getElementById('main-edit-upload').files[0];
       if (!file) return alert('Загрузите фото');
 
-      const prompt = document.getElementById('edit-prompt').value || "Улучшить качество";
+      const prompt = document.getElementById('edit-prompt').value || "Улучшить";
       const resultDiv = document.getElementById('image-result');
       resultDiv.classList.add('hidden');
 
       try {
-        const base64Main = await fileToBase64(file);
+        const base64 = await fileToBase64(file);
         const res = await apiFetch('/v1/images/edits', {
           method: 'POST',
           body: JSON.stringify({
             model: "grok-imagine-image",
             prompt,
-            image: { url: base64Main },
+            image: { url: base64 },
             n: 1,
-            response_format: "b64_json",
-            seed: Math.floor(Math.random() * 2147483647)
+            response_format: "b64_json"
           })
         });
-
         const data = await res.json();
-        logDebug("Ответ editImage", data);
+        logDebug("editImage ответ", data);
 
         if (data.data && data.data[0]) {
           const src = `data:image/jpeg;base64,${data.data[0].b64_json}`;
@@ -250,8 +177,9 @@
             img.className = 'max-w-2xl mx-auto rounded-3xl';
             resultDiv.innerHTML = '';
             resultDiv.appendChild(img);
+            
             const btn = document.createElement('button');
-            btn.onclick = () => downloadImage(1);
+            btn.onclick = downloadImage;
             btn.className = 'mt-6 bg-indigo-600 text-white px-12 py-5 rounded-3xl';
             btn.textContent = 'Скачать изображение';
             resultDiv.appendChild(btn);
@@ -266,7 +194,7 @@
 
     function downloadImage() {
       const img = document.getElementById('variant1');
-      if (img?.src) {
+      if (img && img.src) {
         const a = document.createElement('a');
         a.href = img.src;
         a.download = `image-${Date.now()}.jpg`;
@@ -274,7 +202,7 @@
       }
     }
 
-    // ==================== ГЕНЕРАЦИЯ ИЗ ТЕКСТА ====================
+    // ==================== ТЕКСТ ====================
     async function generateTextImages() {
       const prompt = document.getElementById('text-prompt').value.trim();
       if (!prompt) return alert('Введите описание');
@@ -286,15 +214,13 @@
       try {
         const res = await apiFetch('/v1/images/generations', {
           method: 'POST',
-          body: JSON.stringify({ 
-            model: "grok-imagine-image", 
-            prompt, 
-            n: 1, 
-            response_format: "b64_json", 
-            seed: Math.floor(Math.random() * 2147483647) 
+          body: JSON.stringify({
+            model: "grok-imagine-image",
+            prompt,
+            n: 1,
+            response_format: "b64_json"
           })
         });
-
         const data = await res.json();
         if (data.data && data.data[0]) {
           const src = `data:image/jpeg;base64,${data.data[0].b64_json}`;
@@ -305,10 +231,10 @@
       }
     }
 
-    // Запуск
+    // Инициализация
     if (checkAuth()) {
       switchTab(0);
-      logDebug("Страница загружена успешно");
+      logDebug("Страница успешно загружена");
     }
   </script>
 </body>
