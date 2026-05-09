@@ -163,6 +163,7 @@
       });
     }
 
+    // ==================== ВИДЕО ====================
     async function generateVideo() {
       const file = document.getElementById('video-image-upload').files[0];
       if (!file) return alert('Загрузите фото!');
@@ -211,8 +212,7 @@
             const progress = statusData.progress || 0;
             statusEl.innerHTML = `Генерация... <span class="font-mono">${progress}%</span>`;
 
-            if (statusData.error && statusData.error.toLowerCase().includes('moderation') ||
-                statusData.status === 'moderation') {
+            if (statusData.error && statusData.error.toLowerCase().includes('moderation') || statusData.status === 'moderation') {
               clearInterval(videoInterval);
               statusEl.innerHTML = `<span class="text-red-600">Контент не прошёл модерацию</span>`;
               return;
@@ -246,7 +246,7 @@
       player.load();
 
       player.onerror = () => {
-        logDebug("Прямая загрузка не удалась, используем прокси");
+        logDebug("Прямая загрузка не удалась → прокси");
         const proxiedUrl = `${API_BASE}/video?url=${encodeURIComponent(originalUrl)}`;
         player.src = proxiedUrl;
         player.load();
@@ -254,8 +254,10 @@
 
       player.onloadedmetadata = () => {
         statusEl.textContent = '✅ Видео готово!';
-        saveVideoToHistory(originalUrl, document.getElementById('video-image-prompt').value || "Без описания");
       };
+
+      // Сохраняем сразу после получения URL
+      saveVideoToHistory(originalUrl, document.getElementById('video-image-prompt').value || "Без описания");
     }
 
     function saveVideoToHistory(videoUrl, prompt) {
@@ -269,7 +271,7 @@
       });
       if (history.length > 50) history.pop();
       localStorage.setItem('videoHistory', JSON.stringify(history));
-      logDebug("Видео сохранено в историю");
+      logDebug("✅ Видео сохранено в историю");
     }
 
     function stopVideoGeneration() {
@@ -287,6 +289,7 @@
       }
     }
 
+    // ==================== ИЗОБРАЖЕНИЯ ====================
     async function editImage() {
       const file = document.getElementById('main-edit-upload').files[0];
       if (!file) return alert('Загрузите фото');
@@ -342,6 +345,7 @@
       }
     }
 
+    // ==================== ТЕКСТ ====================
     async function generateTextImages() {
       const prompt = document.getElementById('text-prompt').value.trim();
       if (!prompt) return alert('Введите описание');
@@ -370,6 +374,7 @@
       }
     }
 
+    // Инициализация
     if (checkAuth()) {
       switchTab(0);
       logDebug("Страница успешно загружена");
