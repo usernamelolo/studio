@@ -33,7 +33,126 @@
   </div>
 
   <!-- ВИДЕО -->
+  <div id="section-video" class="card p-6 mx-4 rounded-3xl">
+    <h2 class="text-3xl font-semibold mb-6 text-indigo-700">🎥 Видео из загруженного фото</h2>
+    <div class="max-w-2xl mx-auto">
+      <input type="file" id="video-image-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-6 text-center cursor-pointer mb-6">
+      <textarea id="video-image-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите желаемую анимацию..."></textarea>
+      
+      <div class="mt-6">
+        <label class="block text-sm mb-2 text-gray-600">Длительность видео</label>
+        <select id="duration" class="w-full border border-indigo-200 rounded-xl p-3">
+          <option value="3" selected>3 секунды</option>
+          <option value="6">6 секунд</option>
+          <option value="10">10 секунд</option>
+          <option value="15">15 секунд</option>
+        </select>
+      </div>
+
+      <button onclick="generateVideo()" class="mt-10 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">
+        Создать видео
+      </button>
+    </div>
+
+    <div id="video-result" class="mt-12 hidden">
+      <div id="video-status" class="text-center text-xl mb-6 text-gray-700">Генерация видео...</div>
+      <video id="video-player" controls class="w-full max-w-4xl mx-auto rounded-3xl"></video>
+      <div class="flex gap-4 mt-6">
+        <button onclick="downloadVideo()" class="flex-1 bg-indigo-600 text-white py-5 rounded-3xl">Скачать</button>
+        <button onclick="stopVideoGeneration()" class="flex-1 bg-red-600 text-white py-5 rounded-3xl">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ИЗОБРАЖЕНИЯ ИЗ ФОТО -->
+  <div id="section-image" class="card p-6 mx-4 rounded-3xl hidden">
+    <h2 class="text-3xl font-semibold mb-6 text-indigo-700">🖼️ Изображения из загруженного фото</h2>
+    <div class="max-w-2xl mx-auto">
+      <input type="file" id="main-edit-upload" accept="image/*" class="block w-full border-2 border-dashed border-indigo-300 rounded-2xl p-6 text-center cursor-pointer mb-6">
+      <textarea id="edit-prompt" rows="4" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите желаемые изменения..."></textarea>
+      <button onclick="editImage()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">
+        Сгенерировать 1 изображение
+      </button>
+    </div>
+
+    <div id="image-result" class="mt-12 hidden text-center">
+      <img id="variant1" class="max-w-2xl mx-auto rounded-3xl">
       <button onclick="downloadImage()" class="mt-6 bg-indigo-600 text-white px-12 py-5 rounded-3xl">Скачать изображение</button>
+    </div>
+  </div>
+
+  <!-- ГЕНЕРАЦИЯ ИЗ ТЕКСТА -->
+  <div id="section-text" class="card p-6 mx-4 rounded-3xl hidden">
+    <h2 class="text-3xl font-semibold mb-6 text-indigo-700">📝 Генерация картинок из текста</h2>
+    <div class="max-w-2xl mx-auto">
+      <textarea id="text-prompt" rows="6" class="w-full border-2 border-indigo-200 rounded-2xl p-6 text-lg" placeholder="Опишите картинку..."></textarea>
+      <button onclick="generateTextImages()" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-semibold py-7 rounded-3xl transition">
+        Сгенерировать 1 изображение
+      </button>
+    </div>
+
+    <div id="text-result" class="mt-12 hidden">
+      <div id="text-gallery" class="grid grid-cols-1 gap-6"></div>
+    </div>
+  </div>
+
+  <!-- DEBUG -->
+  <div class="mx-4 mt-8 card p-6 rounded-3xl">
+    <h3 class="font-semibold text-lg mb-3 flex items-center gap-2">
+      🧪 Debug Информация
+      <button onclick="clearDebug()" class="ml-auto text-sm bg-gray-200 hover:bg-gray-300 px-4 py-1 rounded-xl">Очистить</button>
+    </h3>
+    <pre id="debug" class="bg-gray-900 text-green-400 p-4 rounded-2xl overflow-auto max-h-96 text-xs leading-relaxed"></pre>
+  </div>
+
+  <script>
+    const API_BASE = "/api/proxy";
+    let currentUser = null;
+    let videoInterval = null;
+    const debugLog = document.getElementById('debug');
+
+    function logDebug(message, data = null) {
+      const time = new Date().toLocaleTimeString('ru-RU');
+      let entry = `[${time}] ${message}`;
+      if (data) entry += '\n' + JSON.stringify(data, null, 2);
+      debugLog.textContent = entry + '\n\n' + debugLog.textContent;
+    }
+
+    function clearDebug() { debugLog.textContent = ''; }
+
+    function checkAuth() {
+      currentUser = localStorage.getItem('currentUser');
+      if (!currentUser) {
+        window.location.href = 'index.html';
+        return false;
+      }
+      document.getElementById('current-user').textContent = `👤 ${currentUser}`;
+      return true;
+    }
+
+    function logout() {
+      localStorage.removeItem('currentUser');
+      window.location.href = 'index.html';
+    }
+
+    function switchTab(n) {
+      document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.add('hidden'));
+      const sections = ['video','image','text'];
+      document.getElementById('section-' + sections[n]).classList.remove('hidden');
+      
+      document.querySelectorAll('[id^="tab"]').forEach(t => t.classList.remove('tab-active'));
+      document.getElementById('tab' + n).classList.add('tab-active');
+    }
+
+    async function apiFetch(endpoint, options = {}) {
+      logDebug(`→ Запрос: ${endpoint}`);
+      return fetch(API_BASE + endpoint, {
+        method: options.method || 'GET',
+        headers: { ...options.headers, 'Content-Type': 'application/json' },
+        body: (options.method === 'POST' && options.body) ? options.body : undefined
+      });
+    }
+
     async function fileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -43,7 +162,6 @@
       });
     }
 
-    // ==================== ВИДЕО ====================
     async function generateVideo() {
       const file = document.getElementById('video-image-upload').files[0];
       if (!file) return alert('Загрузите фото!');
@@ -124,9 +242,7 @@
         player.load();
       };
 
-      player.onloadedmetadata = () => {
-        statusEl.textContent = '✅ Видео готово!';
-      };
+      player.onloadedmetadata = () => statusEl.textContent = '✅ Видео готово!';
     }
 
     function stopVideoGeneration() {
@@ -144,7 +260,6 @@
       }
     }
 
-    // ==================== ИЗОБРАЖЕНИЯ ====================
     async function editImage() {
       const file = document.getElementById('main-edit-upload').files[0];
       if (!file) return alert('Загрузите фото');
@@ -202,7 +317,6 @@
       }
     }
 
-    // ==================== ТЕКСТ ====================
     async function generateTextImages() {
       const prompt = document.getElementById('text-prompt').value.trim();
       if (!prompt) return alert('Введите описание');
