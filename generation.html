@@ -21,6 +21,7 @@
     <h1 class="text-3xl font-bold tracking-tight">AI Генератор Контента</h1>
     <div class="flex items-center gap-4">
       <span id="current-user" class="bg-white/20 px-6 py-3 rounded-2xl text-lg"></span>
+      <button onclick="window.location.href='videos.html'" class="bg-white/20 hover:bg-white/30 px-6 py-3 rounded-2xl text-lg transition">📼 Мои видео</button>
       <button onclick="logout()" class="bg-white/20 hover:bg-white/30 px-8 py-4 rounded-2xl text-lg transition">Выйти</button>
     </div>
   </div>
@@ -32,7 +33,7 @@
     <button onclick="switchTab(2)" id="tab2" class="w-full max-w-xs px-10 py-5 text-2xl rounded-3xl border-2 border-indigo-200">📝 Генерация из текста</button>
   </div>
 
-  <!-- ВИДЕО -->
+  <!-- ВИДЕО ИЗ ФОТО -->
   <div id="section-video" class="card p-6 mx-4 rounded-3xl">
     <h2 class="text-3xl font-semibold mb-6 text-indigo-700">🎥 Видео из загруженного фото</h2>
     <div class="max-w-2xl mx-auto">
@@ -171,6 +172,8 @@
       resultDiv.classList.remove('hidden');
       statusEl.textContent = 'Подготовка...';
 
+      if (videoInterval) clearInterval(videoInterval);
+
       try {
         const base64Image = await fileToBase64(file);
         const duration = currentUser === 'nysp' ? parseInt(document.getElementById('duration').value) : 8;
@@ -203,10 +206,17 @@
           try {
             const statusRes = await apiFetch(`/v1/videos/${requestId}`);
             const statusData = await statusRes.json();
-            logDebug("Статус", statusData);
+            logDebug("Статус видео", statusData);
 
             const progress = statusData.progress || 0;
             statusEl.innerHTML = `Генерация... <span class="font-mono">${progress}%</span>`;
+
+            if (statusData.error && statusData.error.toLowerCase().includes('moderation') ||
+                statusData.status === 'moderation') {
+              clearInterval(videoInterval);
+              statusEl.innerHTML = `<span class="text-red-600">Контент не прошёл модерацию</span>`;
+              return;
+            }
 
             if (statusData.status === 'done') {
               clearInterval(videoInterval);
@@ -242,12 +252,29 @@
         player.load();
       };
 
-      player.onloadedmetadata = () => statusEl.textContent = '✅ Видео готово!';
+      player.onloadedmetadata = () => {
+        statusEl.textContent = '✅ Видео готово!';
+        saveVideoToHistory(originalUrl, document.getElementById('video-image-prompt').value || "Без описания");
+      };
+    }
+
+    function saveVideoToHistory(videoUrl, prompt) {
+      let history = JSON.parse(localStorage.getItem('videoHistory') || '[]');
+      history.unshift({
+        id: Date.now(),
+        url: videoUrl,
+        prompt: prompt.substring(0, 120),
+        timestamp: new Date().toISOString(),
+        date: new Date().toLocaleString('ru-RU')
+      });
+      if (history.length > 50) history.pop();
+      localStorage.setItem('videoHistory', JSON.stringify(history));
+      logDebug("Видео сохранено в историю");
     }
 
     function stopVideoGeneration() {
       if (videoInterval) clearInterval(videoInterval);
-      document.getElementById('video-status').textContent = 'Остановлено';
+      document.getElementById('video-status').textContent = 'Генерация остановлена';
     }
 
     function downloadVideo() {
@@ -281,7 +308,6 @@
           })
         });
         const data = await res.json();
-        logDebug("editImage ответ", data);
 
         if (data.data && data.data[0]) {
           const src = `data:image/jpeg;base64,${data.data[0].b64_json}`;
@@ -292,7 +318,6 @@
             img.className = 'max-w-2xl mx-auto rounded-3xl';
             resultDiv.innerHTML = '';
             resultDiv.appendChild(img);
-            
             const btn = document.createElement('button');
             btn.onclick = downloadImage;
             btn.className = 'mt-6 bg-indigo-600 text-white px-12 py-5 rounded-3xl';
@@ -345,7 +370,6 @@
       }
     }
 
-    // Инициализация
     if (checkAuth()) {
       switchTab(0);
       logDebug("Страница успешно загружена");
